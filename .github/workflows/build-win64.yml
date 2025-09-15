@@ -22,9 +22,9 @@ jobs:
         cd src
         lazbuild calc2plus3.lpi
 
-    - name: Upload to GitHub Release
-      uses: ncipollo/release-action@v1
+    - name: Upload exe to GitHub Release
+      uses: softprops/action-gh-release@v2
       with:
-        artifacts: build/calc2plus3.exe
-        upload_url: ${{ github.event.release.upload_url }}
-        token: ${{ secrets.GITHUB_TOKEN }}
+        files: build/calc2plus3.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
