@@ -1,8 +1,6 @@
 name: Build Lazarus Win64
 
 on:
-  push:
-    branches: [ main ]
   release:
     types: [created]
 
@@ -28,4 +26,5 @@ jobs:
       uses: ncipollo/release-action@v1
       with:
         artifacts: build/calc2plus3.exe
+        upload_url: ${{ github.event.release.upload_url }}
         token: ${{ secrets.GITHUB_TOKEN }}
