@@ -1,0 +1,7 @@
+.workbench/
+backup/
+build/
+lib/
+*.exe
+*.lps
+*.res
