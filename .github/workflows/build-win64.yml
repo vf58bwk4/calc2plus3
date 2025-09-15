@@ -1,0 +1,32 @@
+name: Build Lazarus Win64
+
+on:
+  push:
+    branches: [ main ]
+  release:
+    types: [created]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup Lazarus
+      uses: go-lazarus/setup-lazarus@v1
+      with:
+        lazarus-version: '4.0.0'
+        fpc-version: '3.2.2'
+
+    - name: Build project
+      run: |
+        cd src
+        lazbuild calc2plus3.lpi
+
+    - name: Upload to GitHub Release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: build/calc2plus3.exe
+        token: ${{ secrets.GITHUB_TOKEN }}
