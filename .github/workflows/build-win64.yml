@@ -17,8 +17,7 @@ jobs:
     - name: Setup Lazarus
       uses: gcarreno/setup-lazarus@v3
       with:
-        lazarus-version: '4.0.0'
-        fpc-version: '3.2.2'
+        lazarus-version: stable
 
     - name: Build project
       run: |
