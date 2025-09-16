@@ -1,8 +1,11 @@
-name: Build Lazarus Win64
+name: Build and Release Win64
 
 on:
   release:
     types: [created]
+
+permissions:
+  contents: write
 
 jobs:
   build-windows:
@@ -26,5 +29,5 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: build/calc2plus3.exe
-      env:
-        GITHUB_TOKEN: ${{ secrets.CALC2PLUS3_GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+
