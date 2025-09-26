@@ -1,7 +1,7 @@
 # 2 + 3 — A Calculator
 
 ## Short Description
-**2 + 3** is a lightweight, system-tray calculator with persistent history and variable support.  
+**2 + 3** is a lightweight, system-tray calculator with persistent history and variable support.
 It allows quick expression evaluation, variable management, and fast access via a global hotkey (**Alt+K**).
 
 ## Platform Support
@@ -9,7 +9,7 @@ Currently, **2 + 3** is designed for Windows only.
 It relies on Windows-specific system tray and global hotkey functionality.
 
 ## Installation
-1. Download the latest release from the [Releases](./releases) page.
+1. Download the latest release from the [Releases](../../releases) page.
 3. Run the executable `calc2plus3.exe`.
 
 ## Installation from Sources
@@ -21,21 +21,19 @@ It relies on Windows-specific system tray and global hotkey functionality.
    ```
 
 ### Option 1: Using Lazarus IDE
-3. Open `/src/calc2plus3.lpi` in Lazarus IDE.
+3. Open `src/calc2plus3.lpi` in Lazarus IDE.
 4. Build the project (`Run → Build`).
-
-The compiled executable will be available in the project’s output directory.
 
 ### Option 2: Using lazbuild (Command Line)
 
 3. Make sure you have Free Pascal Compiler (FPC) Lazarus IDE accessible via %PATH% variable.
-3. Build the project using:
+4. Build the project using:
 
    ```bash
-   cd src
-   lazbuild calc2plus3.lpi
+   lazbuild src/calc2plus3.lpi
    ```
-The executable will be created in `/build` directory.
+
+The executable will be created in `build` directory.
 
 ## How to Use the Program
 <img src="./screenshot.png" alt="Screenshot" width="500">
