@@ -2,6 +2,7 @@ program Calc2plus3;
 
 {$mode ObjFPC}
 {$H+}
+{$inline ON}
 
 uses
   Forms, Interfaces,
