@@ -40,6 +40,7 @@
       <Unit>
         <Filename Value="calc2plus3.lpr"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="Calc2plus3"/>
       </Unit>
       <Unit>
         <Filename Value="form\mainform.pas"/>
@@ -67,6 +68,16 @@
         <Filename Value="utils\formutils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="FormUtils"/>
+      </Unit>
+      <Unit>
+        <Filename Value="utils\gridutils.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="GridUtils"/>
+      </Unit>
+      <Unit>
+        <Filename Value="utils\datadir.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="DataDir"/>
       </Unit>
     </Units>
   </ProjectOptions>

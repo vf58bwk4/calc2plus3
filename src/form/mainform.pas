@@ -2,21 +2,22 @@ unit MainForm;
 
 {$mode ObjFPC}
 {$H+}
+{$inline ON}
 
 interface
 
 uses
-  Classes, Windows, Controls, Forms, StdCtrls, ComCtrls, ExtCtrls, Menus, Grids, Types;
+  Classes, SysUtils, Windows, Controls, Forms, StdCtrls, ComCtrls, ExtCtrls, Menus, Grids, Types;
 
 type
 
   { TCalculator }
 
   TCalculator = class(TForm)
-    History:      TStringGrid;
-    VarName:      TEdit;
-    Expression:   TEdit;
-    VarList: TStringGrid;
+    History:    TStringGrid;
+    VarName:    TEdit;
+    Expression: TEdit;
+    VarList:    TStringGrid;
 
     StatusBar: TStatusBar;
 
@@ -44,7 +45,7 @@ type
 
     procedure WMHotKey(var Msg: TMessage); Message WM_HOTKEY;
   Private
-    FFocusSet: Boolean;
+    procedure ShowNormalWindow;
   end;
 
 var
@@ -55,24 +56,21 @@ implementation
 {$R *.lfm}
 
 uses
-  SysUtils, Dialogs, TypInfo,
-  FormUtils, CalcService;
+  Dialogs, TypInfo,
+  FormUtils, GridUtils, CalcService;
 
 const
   HOTKEY_ID = 1;
 
 procedure TCalculator.FormCreate(Sender: TObject);
 begin
+  Windows.RegisterHotKey(Handle, HOTKEY_ID, MOD_ALT, VK_K);
+
   Caption       := Application.Title;
   TrayIcon.Hint := Application.Title;
 
-  CalcService.SetCalculator(self);
-  Windows.RegisterHotKey(Handle, HOTKEY_ID, MOD_ALT, VK_K);
-
-  CalcService.LoadHistory;
-  CalcService.LoadVarList;
-
-  CalcService.SetupHistory;
+  CalcService.Init(self);
+  CalcService.InitCalculator;
 end;
 
 procedure TCalculator.FormDestroy(Sender: TObject);
@@ -82,11 +80,7 @@ end;
 
 procedure TCalculator.FormShow(Sender: TObject);
 begin
-  if not FFocusSet then
-    begin
-    CalcService.SetupFocus;
-    FFocusSet := True;
-    end;
+  CalcService.SetFocus;
 end;
 
 procedure TCalculator.FormClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -98,6 +92,12 @@ begin
   CloseAction := caHide;
 end;
 
+procedure TCalculator.ShowNormalWindow; inline;
+begin
+  WindowState := wsNormal;
+  Show;
+end;
+
 procedure TCalculator.TrayIconMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
   if Button = mbRight then
@@ -106,8 +106,7 @@ begin
     end;
   if Button = mbLeft then
     begin
-    WindowState := wsNormal;
-    Show;
+    ShowNormalWindow;
     end;
 end;
 
@@ -124,8 +123,7 @@ begin
       begin
       if not IsTopMostWindow(self) then
         begin
-        WindowState := wsNormal;
-        Show;
+        ShowNormalWindow;
         end
       else
         begin
@@ -134,28 +132,26 @@ begin
       end
     else
       begin
-      WindowState := wsNormal;
-      Show;
+      ShowNormalWindow;
       end;
     end;
 end;
 
 procedure TCalculator.GridMouseWheelDown(Sender: TObject; Shift: TShiftState; MousePos: TPoint; var Handled: Boolean);
 begin
-  StringGridMouseWheelDown(Sender, Shift, MousePos, Handled);
+  GridUtils.StringGridMouseWheelDown(Sender as TStringGrid, Shift, MousePos, Handled);
 end;
 
 procedure TCalculator.GridMouseWheelUp(Sender: TObject; Shift: TShiftState; MousePos: TPoint; var Handled: Boolean);
 begin
-  StringGridMouseWheelUp(Sender, Shift, MousePos, Handled);
+  GridUtils.StringGridMouseWheelUp(Sender as TStringGrid, Shift, MousePos, Handled);
 end;
-
 
 procedure TCalculator.VarNameKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   if IsKeyCombinationMatch(Key, Shift, [VK_BACK], [ssCtrl]) then
     begin
-    VarName.Clear;
+    CalcService.ClearVarName;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssCtrl]) then
     begin
@@ -175,7 +171,7 @@ procedure TCalculator.ExpressionKeyDown(Sender: TObject; var Key: Word; Shift: T
 begin
   if IsKeyCombinationMatch(Key, Shift, [VK_BACK], [ssCtrl]) then
     begin
-    Expression.Clear;
+    CalcService.ClearExpression;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssCtrl]) then
     begin
