@@ -1,7 +1,7 @@
 object Calculator: TCalculator
-  Left = 785
+  Left = 1052
   Height = 629
-  Top = 151
+  Top = 238
   Width = 471
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle

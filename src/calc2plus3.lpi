@@ -23,6 +23,47 @@
     </General>
     <BuildModes>
       <Item Name="Release" Default="True"/>
+      <Item Name="Debug">
+        <CompilerOptions>
+          <Version Value="11"/>
+          <PathDelim Value="\"/>
+          <Target>
+            <Filename Value="..\build\calc2plus3"/>
+          </Target>
+          <SearchPaths>
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <OtherUnitFiles Value="form;services;utils"/>
+            <UnitOutputDirectory Value="..\lib\$(TargetCPU)-$(TargetOS)"/>
+          </SearchPaths>
+          <Parsing>
+            <SyntaxOptions>
+              <CStyleOperator Value="False"/>
+              <AllowLabel Value="False"/>
+            </SyntaxOptions>
+          </Parsing>
+          <CodeGeneration>
+            <SmartLinkUnit Value="True"/>
+            <TargetCPU Value="i386"/>
+            <TargetOS Value="win32"/>
+            <Optimizations>
+              <OptimizationLevel Value="2"/>
+            </Optimizations>
+            <SmallerCode Value="True"/>
+          </CodeGeneration>
+          <Linking>
+            <Debugging>
+              <GenerateDebugInfo Value="False"/>
+              <RunWithoutDebug Value="True"/>
+              <DebugInfoType Value="dsDwarf3"/>
+            </Debugging>
+            <Options>
+              <Win32>
+                <GraphicApplication Value="True"/>
+              </Win32>
+            </Options>
+          </Linking>
+        </CompilerOptions>
+      </Item>
     </BuildModes>
     <PublishOptions>
       <Version Value="2"/>
@@ -40,6 +81,7 @@
       <Unit>
         <Filename Value="calc2plus3.lpr"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="Calc2plus3"/>
       </Unit>
       <Unit>
         <Filename Value="form\mainform.pas"/>
@@ -62,11 +104,27 @@
       <Unit>
         <Filename Value="utils\appwidelock.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="AppWideLock"/>
       </Unit>
       <Unit>
         <Filename Value="utils\formutils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="FormUtils"/>
+      </Unit>
+      <Unit>
+        <Filename Value="utils\gridutils.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="GridUtils"/>
+      </Unit>
+      <Unit>
+        <Filename Value="utils\datadir.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="DataDir"/>
+      </Unit>
+      <Unit>
+        <Filename Value="config.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Config"/>
       </Unit>
     </Units>
   </ProjectOptions>
