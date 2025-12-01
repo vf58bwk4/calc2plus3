@@ -2,13 +2,13 @@ unit CalcService;
 
 {$mode ObjFPC}
 {$H+}
+{$modeswitch nestedprocvars}
 {$inline ON}
 
 interface
 
 uses
-  Classes, SysUtils, Windows, StdCtrls, ComCtrls, Grids,
-  ExprService, MainForm;
+  MainForm;
 
 procedure CalculateAndUpsertVariable;
 procedure CalculateAndAddVariable;
@@ -37,19 +37,15 @@ procedure RemoveVariable;
 
 procedure SetFocus;
 
-procedure Init(F: TCalculator);
-procedure InitCalculator;
+procedure Receive(const F: TCalculator);
+procedure Initialize;
 
 
 implementation
 
 uses
-  Controls, DataDir, FormUtils, GridUtils;
-
-const
-  DATA_DIR  = '2plus3';
-  HIST_FILE = 'history.2p3';
-  VARS_FILE = 'variables.2p3';
+  SysUtils, Windows, Controls, StdCtrls, ComCtrls, Grids,
+  Config, ExprService, DataDir, FormUtils, GridUtils;
 
 var
   LCHistory:    TStringGrid;
@@ -65,36 +61,36 @@ begin
   LCStatusBar.SimpleText := 'OK';
 end;
 
-procedure StatusError(Message: String); inline;
+procedure StatusError(const Message: String); inline;
 begin
   LCStatusBar.SimpleText := 'ERROR: ' + Message;
 end;
 
-procedure LoadGrid(Grid: TStringGrid; Filename: String);
+procedure LoadGrid(Grid: TStringGrid; const DataFile: TDataFile);
 var
   PathFilename: String;
 begin
-  PathFilename := GetDataDir(DATA_DIR) + '\' + Filename;
+  PathFilename := GetDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
   LoadStringGridFromCSV(Grid, PathFilename);
 end;
 
-procedure SaveGrid(Grid: TStringGrid; Filename: String);
+procedure SaveGrid(const Grid: TStringGrid; const DataFile: TDataFile);
 var
   PathFilename: String;
 begin
-  PathFilename := ForceDataDir(DATA_DIR) + '\' + Filename;
+  PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
   SaveStringGridToCSV(Grid, PathFilename);
 end;
 
 type
-  TActionProc   = procedure(Value: String);
-  TGetValueFunc = function(Source: TStringGrid): String;
+  TActionProc   = procedure(const Value: String);
+  TGetValueFunc = function(const Source: TStringGrid; const Param: Integer): String;
 
-procedure RunWithHandle(ActionProc: TActionProc; GetValueFunc: TGetValueFunc; Source: TStringGrid);
+procedure DoActionFromSource(ActionProc: TActionProc; GetValueFunc: TGetValueFunc; GetValueFuncParam: Integer; Source: TStringGrid);
 begin
     try
       begin
-      ActionProc(GetValueFunc(Source));
+      ActionProc(GetValueFunc(Source, GetValueFuncParam));
 
       StatusOK;
       end;
@@ -106,30 +102,28 @@ begin
     end;
 end;
 
-procedure InsertInExpression(Value: String);
+procedure InsertInExpression(const Value: String);
 var
   CursorPos, OldSelLength: Integer;
 begin
-  with LCExpression do
-    begin
-    CursorPos    := SelStart;
-    OldSelLength := SelLength;
+  CursorPos    := LCExpression.SelStart;
+  OldSelLength := LCExpression.SelLength;
 
-    Text     := Copy(Text, 1, CursorPos) + Value + Copy(Text, CursorPos + OldSelLength + 1, Length(Text));
-    SelStart := CursorPos + Length(Value);
+  LCExpression.Text     := Copy(LCExpression.Text, 1, CursorPos) + Value + Copy(LCExpression.Text, CursorPos +
+    OldSelLength + 1, Length(LCExpression.Text));
+  LCExpression.SelStart := CursorPos + Length(Value);
 
-    SetFocus;
-    end;
+  LCExpression.SetFocus;
 end;
 
-procedure ReplaceExpression(Value: String);
+procedure ReplaceExpression(const Value: String);
 begin
   LCExpression.Text     := Value;
   LCExpression.SelStart := Length(Value);
   LCExpression.SetFocus;
 end;
 
-procedure ReplaceVarName(Value: String);
+procedure ReplaceVarName(const Value: String);
 begin
   LCVarName.Text      := Value;
   LCVarName.SelStart  := 1;
@@ -137,14 +131,16 @@ begin
   LCVarName.SetFocus;
 end;
 
-function GetClickedCellValue(Source: TStringGrid): String;
+function GetClickedCellValue(const Source: TStringGrid; const MaxClickedCol: Integer): String;
 var
   LocalPos, CellPos: TPoint;
+  ClickedCol:        Integer;
 begin
-  LocalPos := Source.ScreenToClient(Mouse.CursorPos);
-  CellPos  := Source.MouseToCell(LocalPos);
+  LocalPos   := Source.ScreenToClient(Mouse.CursorPos);
+  CellPos    := Source.MouseToCell(LocalPos);
+  ClickedCol := CellPos.X - Source.FixedCols;
 
-  if (CellPos.Y >= Source.FixedRows) and (CellPos.X >= Source.FixedCols) then
+  if (CellPos.Y >= Source.FixedRows) and (ClickedCol >= 0) and (ClickedCol <= MaxClickedCol) then
     begin
     Result := Source.Cells[CellPos.X, CellPos.Y];
     end
@@ -154,31 +150,9 @@ begin
     end;
 end;
 
-function GetKeyDownCellValue(Source: TStringGrid): String;
+function GetKeyDownCellValue(const Source: TStringGrid; const MaxClickedCol: Integer): String;
 begin
-  Result := Source.Cells[Source.Col, Source.Row];
-end;
-
-function GetClickedVarValue(Source: TStringGrid): String;
-var
-  LocalPos, CellPos: TPoint;
-begin
-  LocalPos := Source.ScreenToClient(Mouse.CursorPos);
-  CellPos  := Source.MouseToCell(LocalPos);
-
-  if (CellPos.Y >= Source.FixedRows) and (CellPos.X = Source.FixedCols) then
-    begin
-    Result := Source.Cells[CellPos.X, CellPos.Y];
-    end
-  else
-    begin
-    raise Exception.Create('Clicked on non-variable column');
-    end;
-end;
-
-function GetKeyDownVarValue(Source: TStringGrid): String;
-begin
-  if Source.Col = Source.FixedCols then
+  if (Source.Col - Source.FixedCols <= MaxClickedCol) then
     begin
     Result := Source.Cells[Source.Col, Source.Row];
     end
@@ -205,46 +179,35 @@ begin
 end;
 
 type
-  TModifyVariableOp = (moReplace, moAdd, moSubtract);
+  TOperationFunc = function(const A, B: Double): Double is nested;
 
-procedure CalculateAndModifyVariable(Op: TModifyVariableOp);
+procedure CalculateAndModifyVariable(const OpFunc: TOperationFunc);
 var
   VarName:      String;
   VarValue, OldVarValue, NewVarValue: Double;
   DeleteRowIdx: Integer;
 begin
-  VarName        := Trim(LCVarName.Text);
-  LCVarName.Text := VarName;
     try
       begin
+      VarName        := Trim(LCVarName.Text);
+      LCVarName.Text := VarName;
+
       if FindRowByCol0Value(LCVarList, VarName, DeleteRowIdx) then
         begin
         OldVarValue := StrToFloat(LCVarList.Cells[1, DeleteRowIdx]);
-        LCVarList.DeleteRow(DeleteRowIdx);
         end
       else
         begin
         OldVarValue := 0.0;
         end;
+      VarValue    := ExprService.Calculate(LCExpression.Text);
+      NewVarValue := OpFunc(OldVarValue, VarValue);
 
-      VarValue := ExprService.Calculate(LCExpression.Text);
-      case Op of
-        moReplace:
-          begin
-          NewVarValue := VarValue;
-          end;
-        moAdd:
-          begin
-          NewVarValue := OldVarValue + VarValue;
-          end;
-        moSubtract:
-          begin
-          NewVarValue := OldVarValue - VarValue;
-          end;
-        end;
+      ExprService.UpsertVariable(VarName, NewVarValue);
 
-      ExprService.UpsertVariable(VarName, VarValue);
+      LCVarList.DeleteRow(DeleteRowIdx);
       LCVarList.InsertRowWithValues(LCVarList.FixedRows, [VarName, NewVarValue.ToString]);
+
       SaveGrid(LCVarList, VARS_FILE);
 
       StatusOK;
@@ -261,37 +224,72 @@ end;
 {================ Interface routines ==============}
 
 procedure CalculateAndUpsertVariable;
+
+  function OpFunc(const OldVal, NewVal: Double): Double;
+  begin
+    Result := NewVal;
+  end;
+
 begin
-  CalculateAndModifyVariable(moReplace);
+  CalculateAndModifyVariable(@OpFunc);
 end;
 
 procedure CalculateAndAddVariable;
+
+  function OpFunc(const OldVal, NewVal: Double): Double;
+  begin
+    Result := OldVal + NewVal;
+  end;
+
 begin
-  CalculateAndModifyVariable(moAdd);
+  CalculateAndModifyVariable(@OpFunc);
 end;
 
 procedure CalculateAndSubtractVariable;
+
+  function OpFunc(const OldVal, NewVal: Double): Double;
+  begin
+    Result := OldVal - NewVal;
+  end;
+
 begin
-  CalculateAndModifyVariable(moSubtract);
+  CalculateAndModifyVariable(@OpFunc);
 end;
 
 procedure CalculateAndInsertInHistory;
 var
   NewExpression, NewResult: String;
-  OldExpression, OldResult: String;
-  LastRowIdx:               Integer;
 
-  procedure HistoryInsertNewItem;
+  procedure InsertInHistory;
   var
-    NewRowIdx: Integer;
+    OldExpression, OldResult: String;
+    LastRowIdx:               Integer;
+
+    procedure HistoryInsertNewItem;
+    var
+      NewRowIdx: Integer;
+    begin
+      NewRowIdx                     := LCHistory.RowCount;
+      LCHistory.RowCount            := NewRowIdx + 1;
+      LCHistory.Cells[0, NewRowIdx] := NewResult;
+      LCHistory.Cells[1, NewRowIdx] := NewExpression;
+      LCHistory.TopRow              := NewRowIdx;
+    end;
+
   begin
-    with LCHistory do
+    if LCHistory.RowCount = 0 then
       begin
-      NewRowIdx           := RowCount;
-      RowCount            := NewRowIdx + 1;
-      Cells[0, NewRowIdx] := NewResult;
-      Cells[1, NewRowIdx] := NewExpression;
-      TopRow              := NewRowIdx;
+      HistoryInsertNewItem;
+      end
+    else
+      begin
+      LastRowIdx    := LCHistory.RowCount - 1;
+      OldResult     := LCHistory.Cells[0, LastRowIdx];
+      OldExpression := LCHistory.Cells[1, LastRowIdx];
+      if not ((NewResult = OldResult) and (NewExpression = OldExpression)) then
+        begin
+        HistoryInsertNewItem;
+        end;
       end;
   end;
 
@@ -301,29 +299,11 @@ begin
       NewExpression := LCExpression.Text;
       NewResult     := ExprService.Calculate(NewExpression).ToString;
 
-      // TODO: move insertion logic away
-      with LCHistory do
-        begin
-        if RowCount = 0 then
-          begin
-          HistoryInsertNewItem;
-          end
-        else
-          begin
-          LastRowIdx    := RowCount - 1;
-          OldResult     := Cells[0, LastRowIdx];
-          OldExpression := Cells[1, LastRowIdx];
-          if not ((NewResult = OldResult) and (NewExpression = OldExpression)) then
-            begin
-            HistoryInsertNewItem;
-            end;
-          end;
-        end;
-
       LCExpression.Text     := NewResult;
       LCExpression.SelStart := Length(NewResult);
 
-      SaveGrid(LCHistory, HIST_FILE);
+      InsertInHistory;
+      SaveGrid(LCHistory, HISTORY_FILE);
 
       StatusOK;
       end
@@ -335,54 +315,58 @@ begin
     end;
 end;
 
+const
+  ONE_COLUMN  = 0;
+  TWO_COLUMNS = 1;
+
 procedure CopyFromHistoryToExpressionOnClick;
 begin
-  RunWithHandle(@InsertInExpression, @GetClickedCellValue, LCHistory);
+  DoActionFromSource(@InsertInExpression, @GetClickedCellValue, TWO_COLUMNS, LCHistory);
 end;
 
 procedure CopyFromHistoryToExpressionOnKey;
 begin
-  RunWithHandle(@InsertInExpression, @GetKeyDownCellValue, LCHistory);
+  DoActionFromSource(@InsertInExpression, @GetKeyDownCellValue, TWO_COLUMNS, LCHistory);
 end;
 
 procedure ReplaceExpressionFromHistoryOnClick;
 begin
-  RunWithHandle(@ReplaceExpression, @GetClickedCellValue, LCHistory);
+  DoActionFromSource(@ReplaceExpression, @GetClickedCellValue, TWO_COLUMNS, LCHistory);
 end;
 
 procedure ReplaceExpressionFromHistoryOnKey;
 begin
-  RunWithHandle(@ReplaceExpression, @GetKeyDownCellValue, LCHistory);
+  DoActionFromSource(@ReplaceExpression, @GetKeyDownCellValue, TWO_COLUMNS, LCHistory);
 end;
 
 procedure CopyFromVarListToExpressionOnKey;
 begin
-  RunWithHandle(@InsertInExpression, @GetKeyDownCellValue, LCVarList);
+  DoActionFromSource(@InsertInExpression, @GetKeyDownCellValue, TWO_COLUMNS, LCVarList);
 end;
 
 procedure CopyFromVarListToExpressionOnClick;
 begin
-  RunWithHandle(@InsertInExpression, @GetClickedCellValue, LCVarList);
+  DoActionFromSource(@InsertInExpression, @GetClickedCellValue, TWO_COLUMNS, LCVarList);
 end;
 
 procedure ReplaceExpressionFromVarListOnClick;
 begin
-  RunWithHandle(@ReplaceExpression, @GetClickedCellValue, LCVarList);
+  DoActionFromSource(@ReplaceExpression, @GetClickedCellValue, TWO_COLUMNS, LCVarList);
 end;
 
 procedure ReplaceExpressionFromVarListOnKey;
 begin
-  RunWithHandle(@ReplaceExpression, @GetKeyDownCellValue, LCVarList);
+  DoActionFromSource(@ReplaceExpression, @GetKeyDownCellValue, TWO_COLUMNS, LCVarList);
 end;
 
 procedure ReplaceVarNameFromVarListOnClick;
 begin
-  RunWithHandle(@ReplaceVarName, @GetClickedVarValue, LCVarList);
+  DoActionFromSource(@ReplaceVarName, @GetClickedCellValue, ONE_COLUMN, LCVarList);
 end;
 
 procedure ReplaceVarNameFromVarListOnKey;
 begin
-  RunWithHandle(@ReplaceVarName, @GetKeyDownVarValue, LCVarList);
+  DoActionFromSource(@ReplaceVarName, @GetKeyDownCellValue, ONE_COLUMN, LCVarList);
 end;
 
 procedure ClearExpression;
@@ -401,20 +385,31 @@ var
   DeleteRowIdx: Integer;
   VarName:      String;
 begin
-  LocalPos     := LCVarList.ScreenToClient(Mouse.CursorPos);
-  DeleteRowIdx := LCVarList.MouseToCell(LocalPos).Y;
-  VarName      := LCVarList.Cells[LCVarList.FixedCols, DeleteRowIdx];
+    try
+      begin
+      LocalPos     := LCVarList.ScreenToClient(Mouse.CursorPos);
+      DeleteRowIdx := LCVarList.MouseToCell(LocalPos).Y;
+      VarName      := LCVarList.Cells[LCVarList.FixedCols, DeleteRowIdx];
 
-  LCVarList.DeleteRow(DeleteRowIdx);
-  ExprService.RemoveVariable(VarName);
+      LCVarList.DeleteRow(DeleteRowIdx);
+      ExprService.RemoveVariable(VarName);
 
-  SaveGrid(LCVarList, VARS_FILE);
+      SaveGrid(LCVarList, VARS_FILE);
+
+      StatusOK;
+      end
+    except
+    on E: Exception do
+      begin
+      StatusError(E.Message);
+      end;
+    end;
 end;
 
 var
   FocusSet: Boolean;
 
-procedure SetFocus; inline;
+procedure SetFocus;
 begin
   if not FocusSet then
     begin
@@ -423,7 +418,7 @@ begin
     end;
 end;
 
-procedure Init(F: TCalculator);
+procedure Receive(const F: TCalculator);
 begin
   with F do
     begin
@@ -435,7 +430,7 @@ begin
     end;
 end;
 
-procedure InitCalculator;
+procedure Initialize;
 begin
   LCHistory.AutoFillColumns := True;
   LCVarList.AutoFillColumns := True;
@@ -445,7 +440,7 @@ begin
 
     try
       begin
-      LoadGrid(LCHistory, HIST_FILE);
+      LoadGrid(LCHistory, HISTORY_FILE);
       SetupHistory;
 
       LoadGrid(LCVarList, VARS_FILE);

@@ -1,20 +1,21 @@
 unit DataDir;
 
-{$mode ObjFPC}{$H+}
+{$mode objfpc}
+{$modeswitch nestedprocvars}
 {$H+}
 {$inline ON}
 
 interface
 
-function GetDataDir(Dir: String): String;
-function ForceDataDir(Dir: String): String;
+function GetDataDir(const Dir: String): String;
+function ForceDataDir(const Dir: String): String;
 
 implementation
 
 uses
   SysUtils, ShlObj;
 
-function GetDataDir(Dir: String): String;
+function GetDataDir(const Dir: String): String;
 var
   Path:    array[0..MAX_PATH] of Char;
   BaseDir: String;
@@ -28,7 +29,7 @@ begin
   Result  := BaseDir + Dir;
 end;
 
-function ForceDataDir(Dir: String): String;
+function ForceDataDir(const Dir: String): String;
 var
   DataDir: String;
 begin
@@ -44,4 +45,3 @@ begin
 end;
 
 end.
-

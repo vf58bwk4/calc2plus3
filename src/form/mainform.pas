@@ -2,12 +2,13 @@ unit MainForm;
 
 {$mode ObjFPC}
 {$H+}
+{$modeswitch nestedprocvars}
 {$inline ON}
 
 interface
 
 uses
-  Classes, SysUtils, Windows, Controls, Forms, StdCtrls, ComCtrls, ExtCtrls, Menus, Grids, Types;
+  Classes, Forms, Windows, Controls, StdCtrls, ComCtrls, Grids, ExtCtrls, Menus;
 
 type
 
@@ -56,21 +57,20 @@ implementation
 {$R *.lfm}
 
 uses
-  Dialogs, TypInfo,
-  FormUtils, GridUtils, CalcService;
+  Config, FormUtils, GridUtils, CalcService;
 
 const
   HOTKEY_ID = 1;
 
 procedure TCalculator.FormCreate(Sender: TObject);
 begin
-  Windows.RegisterHotKey(Handle, HOTKEY_ID, MOD_ALT, VK_K);
+  Windows.RegisterHotKey(Handle, HOTKEY_ID, HOT_KEY.ModKey, HOT_KEY.VirtualKey);
 
   Caption       := Application.Title;
   TrayIcon.Hint := Application.Title;
 
-  CalcService.Init(self);
-  CalcService.InitCalculator;
+  CalcService.Receive(self);
+  CalcService.Initialize;
 end;
 
 procedure TCalculator.FormDestroy(Sender: TObject);

@@ -1,7 +1,9 @@
 unit AppWideLock;
 
-{$mode ObjFPC}
+{$mode objfpc}
+{$modeswitch nestedprocvars}
 {$H+}
+{$inline ON}
 
 interface
 
