@@ -1,6 +1,7 @@
 unit GridUtils;
 
-{$mode ObjFPC}
+{$mode objfpc}
+{$modeswitch nestedprocvars}
 {$H+}
 {$inline ON}
 
@@ -9,13 +10,13 @@ interface
 uses
   Classes, Grids;
 
-procedure StringGridMouseWheelDown(SenderGrid: TStringGrid; Shift: TShiftState; MousePos: TPoint; var Handled: Boolean);
-procedure StringGridMouseWheelUp(SenderGrid: TStringGrid; Shift: TShiftState; MousePos: TPoint; var Handled: Boolean);
+procedure StringGridMouseWheelDown(SenderGrid: TStringGrid; const Shift: TShiftState; const MousePos: TPoint; var Handled: Boolean);
+procedure StringGridMouseWheelUp(SenderGrid: TStringGrid; const Shift: TShiftState; const MousePos: TPoint; var Handled: Boolean);
 
 procedure LoadStringGridFromCSV(Grid: TStringGrid; const Filename: String; const Delimiter: Char = ',');
-procedure SaveStringGridToCSV(Grid: TStringGrid; const Filename: String; const Delimiter: Char = ',');
+procedure SaveStringGridToCSV(const Grid: TStringGrid; const Filename: String; const Delimiter: Char = ',');
 
-function FindRowByCol0Value(Grid: TStringGrid; const Col0Value: String; out aRow: Integer): Boolean;
+function FindRowByCol0Value(const Grid: TStringGrid; const Col0Value: String; out aRow: Integer): Boolean;
 
 implementation
 
@@ -55,7 +56,7 @@ begin
     end;
 end;
 
-procedure SaveStringGridToCSV(Grid: TStringGrid; const Filename: String; const Delimiter: Char);
+procedure SaveStringGridToCSV(const Grid: TStringGrid; const Filename: String; const Delimiter: Char);
 var
   CSV:      TCSVDocument;
   Row, Col: Integer;
@@ -80,7 +81,7 @@ begin
     end;
 end;
 
-procedure StringGridMouseWheelDown(SenderGrid: TStringGrid; Shift: TShiftState; MousePos: TPoint; var Handled: Boolean);
+procedure StringGridMouseWheelDown(SenderGrid: TStringGrid; const Shift: TShiftState; const MousePos: TPoint; var Handled: Boolean);
 var
   MaxTopRow: Integer;
 begin
@@ -92,7 +93,7 @@ begin
   Handled := True;
 end;
 
-procedure StringGridMouseWheelUp(SenderGrid: TStringGrid; Shift: TShiftState; MousePos: TPoint; var Handled: Boolean);
+procedure StringGridMouseWheelUp(SenderGrid: TStringGrid; const Shift: TShiftState; const MousePos: TPoint; var Handled: Boolean);
 begin
   if SenderGrid.TopRow > 0 then
     begin
@@ -101,7 +102,7 @@ begin
   Handled := True;
 end;
 
-function FindRowByCol0Value(Grid: TStringGrid; const Col0Value: String; out aRow: Integer): Boolean;
+function FindRowByCol0Value(const Grid: TStringGrid; const Col0Value: String; out aRow: Integer): Boolean;
 var
   Row: Integer;
 begin

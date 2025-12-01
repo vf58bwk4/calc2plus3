@@ -1,11 +1,13 @@
 unit ExprService;
 
-{$mode ObjFPC}
+{$mode objfpc}
+{$modeswitch nestedprocvars}
 {$H+}
+{$inline ON}
 
 interface
 
-function Calculate(Expression: String): Double;
+function Calculate(const Expression: String): Double;
 procedure RemoveVariable(const Name: String);
 procedure UpsertVariable(const Name: String; const Value: Double);
 
@@ -69,7 +71,7 @@ begin
     end;
 end;
 
-function Calculate(Expression: String): Double;
+function Calculate(const Expression: String): Double;
 var
   ParserResult: TFPExpressionResult;
 begin

@@ -1,6 +1,7 @@
 unit FormUtils;
 
-{$mode ObjFPC}
+{$mode objfpc}
+{$modeswitch nestedprocvars}
 {$H+}
 {$inline ON}
 
@@ -13,13 +14,13 @@ type
   TVK_KeyCode    = 0..254;
   TVK_KeyCodeSet = set of TVK_KeyCode;
 
-function IsTopMostWindow(AForm: TForm): Boolean;
+function IsTopMostWindow(const AForm: TForm): Boolean;
 
 function IsKeyCombinationMatch(var Key: Word; const Mods: TShiftState; const ExpectedKeys: TVK_KeyCodeSet; const ExpectedMods: TShiftState): Boolean;
 function CheckModsState(const Mods, ExpectedMods: TShiftState): Boolean;
 
-procedure SetEditMargins(Edit: TEdit; LeftPad, RightPad: Integer);
-procedure SetEditCuebanner(Edit: TEdit; Cuebanner: String);
+procedure SetEditMargins(Edit: TEdit; const LeftPad, RightPad: Integer);
+procedure SetEditCuebanner(Edit: TEdit; const Cuebanner: String);
 
 
 implementation
@@ -32,7 +33,7 @@ const
 
   SHIFTSTATES_ALL: TShiftState = [Low(TShiftStateEnum)..High(TShiftStateEnum)];
 
-function IsTopMostWindow(AForm: TForm): Boolean; inline;
+function IsTopMostWindow(const AForm: TForm): Boolean; inline;
 begin
   Result := (GetForegroundWindow = AForm.Handle);
 end;
@@ -54,12 +55,12 @@ begin
   Result          := (ExpectedMods * Mods = ExpectedMods) and (NotExpectedMods * Mods = []);
 end;
 
-procedure SetEditMargins(Edit: TEdit; LeftPad, RightPad: Integer); inline;
+procedure SetEditMargins(Edit: TEdit; const LeftPad, RightPad: Integer); inline;
 begin
   SendMessage(Edit.Handle, EM_SETMARGINS, EC_LEFTMARGIN or EC_RIGHTMARGIN, MakeLong(LeftPad, RightPad));
 end;
 
-procedure SetEditCuebanner(Edit: TEdit; Cuebanner: String); inline;
+procedure SetEditCuebanner(Edit: TEdit; const Cuebanner: String); inline;
 begin
   SendMessage(Edit.Handle, EM_SETCUEBANNER, WParam(0), LParam(Pwidechar(WideString(Cuebanner))));
 end;
