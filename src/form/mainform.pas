@@ -217,6 +217,10 @@ begin
     begin
     CalcService.ReplaceExpressionFromHistoryOnClick;
     end;
+  if CheckModsState(Mods, [ssCtrl, ssAlt]) then
+    begin
+    CalcService.RemoveHistoryItem;
+    end;
 end;
 
 procedure TCalculator.VariableListKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
