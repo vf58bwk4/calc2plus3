@@ -5,7 +5,6 @@ unit Config;
 {$modeswitch nestedprocvars}
 {$inline ON}
 
-
 interface
 
 uses
@@ -21,7 +20,10 @@ type
   end;
 
 const
-  DATA_DIR                = '2plus3';
+  APP_NAME  = '2plus3';
+  APP_TITLE = '2 + 3';
+
+  DATA_DIR                = APP_NAME;
   HISTORY_FILE: TDataFile = (Dirname: DATA_DIR; Filename: 'history.2p3');
   VARS_FILE: TDataFile = (Dirname: DATA_DIR; Filename: 'variables.2p3');
 
