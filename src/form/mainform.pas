@@ -189,6 +189,21 @@ begin
     begin
     CalcService.CalculateAndInsertInHistory;
     end;
+  if IsKeyCombinationMatch(Key, Shift, [VK_ESCAPE], []) then
+    begin
+    if IsEditEmpty(Expression) then
+      begin
+      Hide;
+      end
+    else if IsEditTextSelected(Expression) then
+        begin
+        CalcService.ClearExpression;
+        end
+      else
+        begin
+        SelectAllEditText(Expression);
+        end;
+    end;
 end;
 
 procedure TCalculator.HistoryKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
