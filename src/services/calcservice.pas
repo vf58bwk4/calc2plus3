@@ -34,6 +34,7 @@ procedure ClearExpression;
 procedure ClearVarName;
 
 procedure RemoveVariable;
+procedure RemoveHistoryItem;
 
 procedure SetFocus;
 
@@ -185,6 +186,7 @@ procedure CalculateAndModifyVariable(const OpFunc: TOperationFunc);
 var
   VarName:      String;
   VarValue, OldVarValue, NewVarValue: Double;
+  VarFound:     Boolean;
   DeleteRowIdx: Integer;
 begin
     try
@@ -192,7 +194,8 @@ begin
       VarName        := Trim(LCVarName.Text);
       LCVarName.Text := VarName;
 
-      if FindRowByCol0Value(LCVarList, VarName, DeleteRowIdx) then
+      VarFound := FindRowByCol0Value(LCVarList, VarName, DeleteRowIdx);
+      if VarFound then
         begin
         OldVarValue := StrToFloat(LCVarList.Cells[1, DeleteRowIdx]);
         end
@@ -204,11 +207,13 @@ begin
       NewVarValue := OpFunc(OldVarValue, VarValue);
 
       ExprService.UpsertVariable(VarName, NewVarValue);
-
-      LCVarList.DeleteRow(DeleteRowIdx);
-      LCVarList.InsertRowWithValues(LCVarList.FixedRows, [VarName, NewVarValue.ToString]);
-
       SaveGrid(LCVarList, VARS_FILE);
+
+      if VarFound then
+        begin
+        LCVarList.DeleteRow(DeleteRowIdx);
+        end;
+      LCVarList.InsertRowWithValues(LCVarList.FixedRows, [VarName, NewVarValue.ToString]);
 
       StatusOK;
       end;
@@ -381,20 +386,36 @@ end;
 
 procedure RemoveVariable;
 var
-  LocalPos:     TPoint;
   DeleteRowIdx: Integer;
   VarName:      String;
 begin
     try
       begin
-      LocalPos     := LCVarList.ScreenToClient(Mouse.CursorPos);
-      DeleteRowIdx := LCVarList.MouseToCell(LocalPos).Y;
+      DeleteRowIdx := GetClickedGridRowIndex(LCVarList);
       VarName      := LCVarList.Cells[LCVarList.FixedCols, DeleteRowIdx];
 
       LCVarList.DeleteRow(DeleteRowIdx);
       ExprService.RemoveVariable(VarName);
 
       SaveGrid(LCVarList, VARS_FILE);
+
+      StatusOK;
+      end
+    except
+    on E: Exception do
+      begin
+      StatusError(E.Message);
+      end;
+    end;
+end;
+
+procedure RemoveHistoryItem;
+begin
+    try
+      begin
+      LCHistory.DeleteRow(GetClickedGridRowIndex(LCHistory));
+
+      SaveGrid(LCHistory, HISTORY_FILE);
 
       StatusOK;
       end
