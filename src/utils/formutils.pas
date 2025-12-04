@@ -8,7 +8,7 @@ unit FormUtils;
 interface
 
 uses
-  Classes, StdCtrls, Grids, Forms;
+  Classes, StdCtrls, Forms;
 
 type
   TVK_KeyCode    = 0..254;
@@ -22,6 +22,9 @@ function CheckModsState(const Mods, ExpectedMods: TShiftState): Boolean;
 procedure SetEditMargins(Edit: TEdit; const LeftPad, RightPad: Integer);
 procedure SetEditCuebanner(Edit: TEdit; const Cuebanner: String);
 
+function IsEditEmpty(Edit: TEdit): Boolean;
+function IsEditTextSelected(Edit: TEdit): Boolean;
+procedure SelectAllEditText(Edit: TEdit);
 
 implementation
 
@@ -63,6 +66,24 @@ end;
 procedure SetEditCuebanner(Edit: TEdit; const Cuebanner: String); inline;
 begin
   SendMessage(Edit.Handle, EM_SETCUEBANNER, WParam(0), LParam(Pwidechar(WideString(Cuebanner))));
+end;
+
+function IsEditEmpty(Edit: TEdit): Boolean; inline;
+begin
+  Result := (Edit = nil) or (Trim(Edit.Text) = '');
+end;
+
+function IsEditTextSelected(Edit: TEdit): Boolean; inline;
+begin
+  Result := (Edit <> nil) and (Edit.SelLength = Length(Edit.Text));
+end;
+
+procedure SelectAllEditText(Edit: TEdit); inline;
+begin
+  if Edit <> nil then
+    begin
+    Edit.SelectAll;
+    end;
 end;
 
 end.
