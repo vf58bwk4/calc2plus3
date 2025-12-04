@@ -22,7 +22,6 @@ function CheckModsState(const Mods, ExpectedMods: TShiftState): Boolean;
 procedure SetEditMargins(Edit: TEdit; const LeftPad, RightPad: Integer);
 procedure SetEditCuebanner(Edit: TEdit; const Cuebanner: String);
 
-
 implementation
 
 uses

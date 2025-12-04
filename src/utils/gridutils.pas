@@ -13,6 +13,8 @@ uses
 procedure StringGridMouseWheelDown(SenderGrid: TStringGrid; const Shift: TShiftState; const MousePos: TPoint; var Handled: Boolean);
 procedure StringGridMouseWheelUp(SenderGrid: TStringGrid; const Shift: TShiftState; const MousePos: TPoint; var Handled: Boolean);
 
+function GetClickedGridRowIndex(const Grid: TCustomGrid): Integer;
+
 procedure LoadStringGridFromCSV(Grid: TStringGrid; const Filename: String; const Delimiter: Char = ',');
 procedure SaveStringGridToCSV(const Grid: TStringGrid; const Filename: String; const Delimiter: Char = ',');
 
@@ -21,7 +23,7 @@ function FindRowByCol0Value(const Grid: TStringGrid; const Col0Value: String; ou
 implementation
 
 uses
-  SysUtils, CsvDocument;
+  SysUtils, Controls, CsvDocument;
 
 procedure LoadStringGridFromCSV(Grid: TStringGrid; const Filename: String; const Delimiter: Char);
 var
@@ -79,6 +81,14 @@ begin
       CSV.Free;
       end;
     end;
+end;
+
+function GetClickedGridRowIndex(const Grid: TCustomGrid): Integer;
+var
+  LocalPos: TPoint;
+begin
+  LocalPos := Grid.ScreenToClient(Mouse.CursorPos);
+  Result := Grid.MouseToCell(LocalPos).Y;
 end;
 
 procedure StringGridMouseWheelDown(SenderGrid: TStringGrid; const Shift: TShiftState; const MousePos: TPoint; var Handled: Boolean);
