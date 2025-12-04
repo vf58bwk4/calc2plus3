@@ -126,6 +126,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="Config"/>
       </Unit>
+      <Unit>
+        <Filename Value="utils\autorun.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Autorun"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
