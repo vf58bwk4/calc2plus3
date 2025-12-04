@@ -34,6 +34,7 @@ procedure ClearExpression;
 procedure ClearVarName;
 
 procedure RemoveVariable;
+procedure RemoveHistoryItem;
 
 procedure SetFocus;
 
@@ -385,20 +386,36 @@ end;
 
 procedure RemoveVariable;
 var
-  LocalPos:     TPoint;
   DeleteRowIdx: Integer;
   VarName:      String;
 begin
     try
       begin
-      LocalPos     := LCVarList.ScreenToClient(Mouse.CursorPos);
-      DeleteRowIdx := LCVarList.MouseToCell(LocalPos).Y;
+      DeleteRowIdx := GetClickedGridRowIndex(LCVarList);
       VarName      := LCVarList.Cells[LCVarList.FixedCols, DeleteRowIdx];
 
       LCVarList.DeleteRow(DeleteRowIdx);
       ExprService.RemoveVariable(VarName);
 
       SaveGrid(LCVarList, VARS_FILE);
+
+      StatusOK;
+      end
+    except
+    on E: Exception do
+      begin
+      StatusError(E.Message);
+      end;
+    end;
+end;
+
+procedure RemoveHistoryItem;
+begin
+    try
+      begin
+      LCHistory.DeleteRow(GetClickedGridRowIndex(LCHistory));
+
+      SaveGrid(LCHistory, HISTORY_FILE);
 
       StatusOK;
       end
