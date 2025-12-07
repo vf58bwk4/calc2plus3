@@ -131,6 +131,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="Autorun"/>
       </Unit>
+      <Unit>
+        <Filename Value="utils\debuglog.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="DebugLog"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
