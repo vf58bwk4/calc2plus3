@@ -26,6 +26,8 @@ function IsEditEmpty(Edit: TEdit): Boolean;
 function IsEditTextSelected(Edit: TEdit): Boolean;
 procedure SelectAllEditText(Edit: TEdit);
 
+procedure DoCtrlBackspace(Edit: TEdit);
+
 implementation
 
 uses
@@ -33,6 +35,8 @@ uses
 
 const
   EM_SETCUEBANNER = $1501;
+
+  EXPRESSION_DELIMITERS = [' ', #9, #10, #13, '+', '-', '*', '/', '^', '(', ')', ',', '$', '%', '&'];
 
   SHIFTSTATES_ALL: TShiftState = [Low(TShiftStateEnum)..High(TShiftStateEnum)];
 
@@ -83,6 +87,40 @@ begin
   if Edit <> nil then
     begin
     Edit.SelectAll;
+    end;
+end;
+
+procedure DoCtrlBackspace(Edit: TEdit);
+var
+  Text:             String;
+  InitIdx, CurrIdx: Integer;
+begin
+  if Edit <> nil then
+    begin
+    if Edit.SelLength > 0 then
+      begin
+      Edit.SelText := '';
+      end
+    else
+      begin
+      Text    := Edit.Text;
+      InitIdx := Edit.SelStart;
+      CurrIdx := InitIdx;
+      while (CurrIdx > 0) and (Text[CurrIdx] in EXPRESSION_DELIMITERS) do
+        begin
+        Dec(CurrIdx);
+        end;
+      while (CurrIdx > 0) and not (Text[CurrIdx] in EXPRESSION_DELIMITERS) do
+        begin
+        Dec(CurrIdx);
+        end;
+      if InitIdx - CurrIdx > 0 then
+        begin
+        Delete(Text, CurrIdx + 1, InitIdx - CurrIdx);
+        Edit.Text := Text;
+        Edit.SelStart := CurrIdx;
+        end;
+      end;
     end;
 end;
 
