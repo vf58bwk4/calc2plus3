@@ -36,6 +36,8 @@ uses
 const
   EM_SETCUEBANNER = $1501;
 
+  EXPRESSION_DELIMITERS = [' ', #9, #10, #13, '+', '-', '*', '/', '^', '(', ')', ',', '$', '%', '&'];
+
 function IsTopMostWindow(const AForm: TForm): Boolean; inline;
 begin
   Result := (GetForegroundWindow = AForm.Handle);
@@ -61,8 +63,6 @@ begin
 end;
 
 function EditWordBreakProc(Text: Pwidechar; CurrentPosition: Integer; TextLength: Integer; BreakCode: Integer): Integer; Stdcall;
-const
-  EXPRESSION_DELIMITERS = [' ', #9, #10, #13, '+', '-', '*', '/', '^', '(', ')', ',', '$', '%', '&'];
 begin
   case BreakCode of
     WB_ISDELIMITER:
