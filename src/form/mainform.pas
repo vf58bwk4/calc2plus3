@@ -171,7 +171,7 @@ procedure TCalculator.ExpressionKeyDown(Sender: TObject; var Key: Word; Shift: T
 begin
   if IsKeyCombinationMatch(Key, Shift, [VK_BACK], [ssCtrl]) then
     begin
-    CalcService.ClearExpression;
+    CalcService.DoCtrlBackspace;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssCtrl]) then
     begin
@@ -197,7 +197,7 @@ begin
       end
     else if IsEditTextSelected(Expression) then
         begin
-        CalcService.ClearExpression;
+        CalcService.DoCtrlBackspace;
         end
       else
         begin
