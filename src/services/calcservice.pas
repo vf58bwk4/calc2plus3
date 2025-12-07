@@ -30,7 +30,7 @@ procedure ReplaceExpressionFromVarListOnKey;
 procedure ReplaceVarNameFromVarListOnClick;
 procedure ReplaceVarNameFromVarListOnKey;
 
-procedure ClearExpression;
+procedure DoCtrlBackspace;
 procedure ClearVarName;
 
 procedure RemoveVariable;
@@ -374,9 +374,9 @@ begin
   DoActionFromSource(@ReplaceVarName, @GetKeyDownCellValue, FROM_ONE_COLUMN, _VarList);
 end;
 
-procedure ClearExpression;
+procedure DoCtrlBackspace;
 begin
-  _Expression.Clear;
+  FormUtils.DoCtrlBackspace(_Expression);
 end;
 
 procedure ClearVarName;
