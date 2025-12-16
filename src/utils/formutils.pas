@@ -36,6 +36,7 @@ uses
   Windows, Messages, SysUtils, DebugLog;
 
 const
+  EM_GETSCROLLPOS = $04DD;
   EM_SETCUEBANNER = $1501;
 
   EXPRESSION_DELIMITERS = [' ', #9, #10, #13, '+', '-', '*', '/', '^', '(', ')', ',', '$', '%', '&'];
@@ -64,52 +65,99 @@ begin
   Result          := (ExpectedMods * Mods = ExpectedMods) and (NotExpectedMods * Mods = []);
 end;
 
+
+procedure SkipDelimitersLeft(const Text: Pwidechar; const TextLength: Integer; var CurrentPosition: Integer);
+begin
+  while (0 <= CurrentPosition) and (CurrentPosition < TextLength) and (Text[CurrentPosition] in EXPRESSION_DELIMITERS) do
+    begin
+    Dec(CurrentPosition);
+    end;
+end;
+
+procedure SkipNonDelimitersLeft(const Text: Pwidechar; const TextLength: Integer; var CurrentPosition: Integer);
+begin
+  while (0 <= CurrentPosition) and (CurrentPosition < TextLength) and not (Text[CurrentPosition] in EXPRESSION_DELIMITERS) do
+    begin
+    Dec(CurrentPosition);
+    end;
+end;
+
+procedure SkipDelimitersRight(const Text: Pwidechar; const TextLength: Integer; var CurrentPosition: Integer);
+begin
+  while (0 <= CurrentPosition) and (CurrentPosition < TextLength) and (Text[CurrentPosition] in EXPRESSION_DELIMITERS) do
+    begin
+    Inc(CurrentPosition);
+    end;
+end;
+
+procedure SkipNonDelimitersRight(const Text: Pwidechar; const TextLength: Integer; var CurrentPosition: Integer);
+begin
+  while (0 <= CurrentPosition) and (CurrentPosition < TextLength) and not (Text[CurrentPosition] in EXPRESSION_DELIMITERS) do
+    begin
+    Inc(CurrentPosition);
+    end;
+end;
+
+type
+  TWordBreakState = (WBS_CLEAR, WBS_SKIPRIGHT);
+
+var
+  WordBreakState: TWordBreakState;
+
 function EditWordBreakProc(Text: Pwidechar; CurrentPosition: Integer; TextLength: Integer; BreakCode: Integer): Integer; Stdcall;
 begin
   case BreakCode of
-    WB_ISDELIMITER:
-      begin
-      Result := 1; // 0: LEFT + RIGHT, 1: RIGHT + RIGHT
-      end;
     WB_LEFT:
       begin
       Dec(CurrentPosition);
-      while (0 <= CurrentPosition) and (Text[CurrentPosition] in EXPRESSION_DELIMITERS) do
+      if (0 <= CurrentPosition) and (CurrentPosition < TextLength) and (Text[CurrentPosition] in EXPRESSION_DELIMITERS) then
         begin
-        Dec(CurrentPosition);
-        end;
-      while (0 <= CurrentPosition) and not (Text[CurrentPosition] in EXPRESSION_DELIMITERS) do
+        SkipDelimitersLeft(Text, TextLength, CurrentPosition);
+        end
+      else
         begin
-        Dec(CurrentPosition);
+        SkipNonDelimitersLeft(Text, TextLength, CurrentPosition);
         end;
       Result := CurrentPosition + 1;
       end;
+    WB_ISDELIMITER:
+      begin
+      WordBreakState := WBS_SKIPRIGHT;
+      Result         := 1; // 0: LEFT + RIGHT, 1: RIGHT + RIGHT
+      end;
     WB_RIGHT:
       begin
-      if CurrentPosition > 0 then
-        begin
-        Dec(CurrentPosition);
-        while (CurrentPosition < TextLength) and not (Text[CurrentPosition] in EXPRESSION_DELIMITERS) do
+      case WordBreakState of
+        WBS_SKIPRIGHT:
           begin
-          Inc(CurrentPosition);
+          WordBreakState := WBS_CLEAR;
+          Result         := CurrentPosition;
           end;
-        while (CurrentPosition < TextLength) and (Text[CurrentPosition] in EXPRESSION_DELIMITERS) do
+        else
           begin
-          Inc(CurrentPosition);
+          Dec(CurrentPosition);
+          if (0 <= CurrentPosition) and (CurrentPosition < TextLength) and (Text[CurrentPosition] in EXPRESSION_DELIMITERS) then
+            begin
+            SkipDelimitersRight(Text, TextLength, CurrentPosition);
+            end
+          else
+            begin
+            SkipNonDelimitersRight(Text, TextLength, CurrentPosition);
+            end;
+          Result := CurrentPosition;
           end;
         end;
-      Result := CurrentPosition;
       end;
     else
       begin
       Result := CurrentPosition;
       end;
     end;
-  //DebugLog('BreakCode = ' + IntToStr(BreakCode) + ', CurrentPosition = ' + IntToStr(CurrentPosition) + ', Result = ' + IntToStr(Result));
 end;
 
 procedure SetEditWordBreakCallback(Edit: TEdit); inline;
 begin
+  WordBreakState := WBS_CLEAR;
   if Edit <> nil then
     begin
     SendMessage(Edit.Handle, EM_SETWORDBREAKPROC, 0, LParam(@EditWordBreakProc));
@@ -166,18 +214,24 @@ begin
       Text    := Edit.Text;
       InitIdx := Edit.SelStart;
       CurrIdx := InitIdx;
-      while (CurrIdx > 0) and (Text[CurrIdx] in EXPRESSION_DELIMITERS) do
+      if (CurrIdx > 0) and (Text[CurrIdx] in EXPRESSION_DELIMITERS) then
         begin
-        Dec(CurrIdx);
-        end;
-      while (CurrIdx > 0) and not (Text[CurrIdx] in EXPRESSION_DELIMITERS) do
+        while (CurrIdx > 0) and (Text[CurrIdx] in EXPRESSION_DELIMITERS) do
+          begin
+          Dec(CurrIdx);
+          end;
+        end
+      else
         begin
-        Dec(CurrIdx);
+        while (CurrIdx > 0) and not (Text[CurrIdx] in EXPRESSION_DELIMITERS) do
+          begin
+          Dec(CurrIdx);
+          end;
         end;
       if InitIdx - CurrIdx > 0 then
         begin
         Delete(Text, CurrIdx + 1, InitIdx - CurrIdx);
-        Edit.Text := Text;
+        Edit.Text     := Text;
         Edit.SelStart := CurrIdx;
         end;
       end;
