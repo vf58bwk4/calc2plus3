@@ -439,7 +439,7 @@ end;
 
 procedure SaveWindowPos;
 begin
-  Workspace.SaveWindowPos(_Form.Left, _Form.Top, _Form.Width, _Form.Height);
+  Workspace.SaveWindowPos(_Form.BoundsRect);
 end;
 
 procedure SetFocus;
@@ -467,7 +467,7 @@ end;
 procedure Initialize;
 var
   WS: TWorkspaceState;
-  WP: TWindowPos;
+  WP: TRect;
 begin
   _History.AutoFillColumns := True;
   _VarList.AutoFillColumns := True;
@@ -489,9 +489,9 @@ begin
       _Expression.Text := WS.Expression;
 
       WP := Workspace.AdjustWindowPos(Workspace.LoadWindowPos);
-      if (WP.Width > 0) and (WP.Height > 0) then
+      if (WP.Right > WP.Left) and (WP.Bottom > WP.Top) then
         begin
-        _Form.SetBounds(WP.Left, WP.Top, WP.Width, WP.Height);
+        _Form.BoundsRect := WP;
         end;
 
       StatusOK;

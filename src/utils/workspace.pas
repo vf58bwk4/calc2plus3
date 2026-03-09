@@ -6,25 +6,21 @@ unit Workspace;
 
 interface
 
+uses
+  Types;
+
 type
   TWorkspaceState = record
     VarName:    String;
     Expression: String;
   end;
 
-  TWindowPos = record
-    Left:   Integer;
-    Top:    Integer;
-    Width:  Integer;
-    Height: Integer;
-  end;
-
 procedure SaveWorkspace(const VarName, Expression: String);
 function LoadWorkspace: TWorkspaceState;
 
-procedure SaveWindowPos(const Left, Top, Width, Height: Integer);
-function LoadWindowPos: TWindowPos;
-function AdjustWindowPos(const WP: TWindowPos): TWindowPos;
+procedure SaveWindowPos(const Bounds: TRect);
+function LoadWindowPos: TRect;
+function AdjustWindowPos(const Bounds: TRect): TRect;
 
 implementation
 
@@ -46,9 +42,9 @@ const
   WINPOS_ROWS: record
     Left:   Byte;
     Top:    Byte;
-    Width:  Byte;
-    Height: Byte;
-  end = (Left: 0; Top: 1; Width: 2; Height: 3);
+    Right:  Byte;
+    Bottom: Byte;
+  end = (Left: 0; Top: 1; Right: 2; Bottom: 3);
 
 procedure SaveWorkspace(const VarName, Expression: String);
 var
@@ -127,7 +123,7 @@ begin
     end;
 end;
 
-procedure SaveWindowPos(const Left, Top, Width, Height: Integer);
+procedure SaveWindowPos(const Bounds: TRect);
 var
   CSV:          TCSVDocument;
   PathFilename: String;
@@ -143,13 +139,13 @@ begin
         try
           begin
           CSV.Cells[CSV_COL.Key,   WINPOS_ROWS.Left]   := 'left';
-          CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Left]   := IntToStr(Left);
+          CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Left]   := IntToStr(Bounds.Left);
           CSV.Cells[CSV_COL.Key,   WINPOS_ROWS.Top]    := 'top';
-          CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Top]    := IntToStr(Top);
-          CSV.Cells[CSV_COL.Key,   WINPOS_ROWS.Width]  := 'width';
-          CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Width]  := IntToStr(Width);
-          CSV.Cells[CSV_COL.Key,   WINPOS_ROWS.Height] := 'height';
-          CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Height] := IntToStr(Height);
+          CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Top]    := IntToStr(Bounds.Top);
+          CSV.Cells[CSV_COL.Key,   WINPOS_ROWS.Right]  := 'right';
+          CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Right]  := IntToStr(Bounds.Right);
+          CSV.Cells[CSV_COL.Key,   WINPOS_ROWS.Bottom] := 'bottom';
+          CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Bottom] := IntToStr(Bounds.Bottom);
           CSV.SaveToFile(TmpFilename);
           end;
         finally
@@ -168,15 +164,15 @@ begin
     end;
 end;
 
-function LoadWindowPos: TWindowPos;
+function LoadWindowPos: TRect;
 var
   PathFilename: String;
   CSV:          TCSVDocument;
 begin
   Result.Left   := 0;
   Result.Top    := 0;
-  Result.Width  := 0;
-  Result.Height := 0;
+  Result.Right  := 0;
+  Result.Bottom := 0;
 
     try
       begin
@@ -195,8 +191,8 @@ begin
             CSV.LoadFromFile(PathFilename);
             if CSV.RowCount > WINPOS_ROWS.Left   then Result.Left   := StrToIntDef(CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Left],   0);
             if CSV.RowCount > WINPOS_ROWS.Top    then Result.Top    := StrToIntDef(CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Top],    0);
-            if CSV.RowCount > WINPOS_ROWS.Width  then Result.Width  := StrToIntDef(CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Width],  0);
-            if CSV.RowCount > WINPOS_ROWS.Height then Result.Height := StrToIntDef(CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Height], 0);
+            if CSV.RowCount > WINPOS_ROWS.Right  then Result.Right  := StrToIntDef(CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Right],  0);
+            if CSV.RowCount > WINPOS_ROWS.Bottom then Result.Bottom := StrToIntDef(CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Bottom], 0);
             end;
           finally
             begin
@@ -210,26 +206,32 @@ begin
     end;
 end;
 
-function AdjustWindowPos(const WP: TWindowPos): TWindowPos;
+function AdjustWindowPos(const Bounds: TRect): TRect;
 var
   Monitor:  TMonitor;
   WorkArea: TRect;
   Center:   TPoint;
+  W, H:     Integer;
 begin
-  Result := WP;
+  Result := Bounds;
 
-  if (WP.Width <= 0) or (WP.Height <= 0) then
+  W := Bounds.Right  - Bounds.Left;
+  H := Bounds.Bottom - Bounds.Top;
+
+  if (W <= 0) or (H <= 0) then
     Exit;
 
   // Find the monitor whose work area is nearest to the window centre
-  Center.X := WP.Left + WP.Width  div 2;
-  Center.Y := WP.Top  + WP.Height div 2;
+  Center.X := Bounds.Left + W div 2;
+  Center.Y := Bounds.Top  + H div 2;
   Monitor  := Screen.MonitorFromPoint(Center);
   WorkArea := Monitor.WorkareaRect;
 
   // Clamp position so the window fits entirely within the work area
-  Result.Left := EnsureRange(WP.Left, WorkArea.Left, Max(WorkArea.Left, WorkArea.Right  - WP.Width));
-  Result.Top  := EnsureRange(WP.Top,  WorkArea.Top,  Max(WorkArea.Top,  WorkArea.Bottom - WP.Height));
+  Result.Left := EnsureRange(Bounds.Left, WorkArea.Left, Max(WorkArea.Left, WorkArea.Right  - W));
+  Result.Top  := EnsureRange(Bounds.Top,  WorkArea.Top,  Max(WorkArea.Top,  WorkArea.Bottom - H));
+  Result.Right  := Result.Left + W;
+  Result.Bottom := Result.Top  + H;
 end;
 
 end.
