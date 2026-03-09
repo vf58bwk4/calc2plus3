@@ -39,6 +39,7 @@ procedure RemoveHistoryItem;
 procedure SetFocus;
 
 procedure SaveWorkspace;
+procedure SaveWindowPos;
 
 procedure Receive(const F: TCalculator);
 procedure Initialize;
@@ -56,6 +57,7 @@ var
   _Expression: TEdit;
   _VarList:    TStringGrid;
   _StatusBar:  TStatusBar;
+  _Form:       TCalculator;
   FocusSet:    Boolean;
 
   {================ Private routines ================}
@@ -435,6 +437,11 @@ begin
   Workspace.SaveWorkspace(_VarName.Text, _Expression.Text);
 end;
 
+procedure SaveWindowPos;
+begin
+  Workspace.SaveWindowPos(_Form.BoundsRect);
+end;
+
 procedure SetFocus;
 begin
   if not FocusSet then
@@ -446,6 +453,7 @@ end;
 
 procedure Receive(const F: TCalculator);
 begin
+  _Form := F;
   with F do
     begin
     _History    := History;
@@ -459,6 +467,7 @@ end;
 procedure Initialize;
 var
   WS: TWorkspaceState;
+  WP: TRect;
 begin
   _History.AutoFillColumns := True;
   _VarList.AutoFillColumns := True;
@@ -478,6 +487,12 @@ begin
       WS               := Workspace.LoadWorkspace;
       _VarName.Text    := WS.VarName;
       _Expression.Text := WS.Expression;
+
+      WP := Workspace.AdjustWindowPos(Workspace.LoadWindowPos);
+      if (WP.Right > WP.Left) and (WP.Bottom > WP.Top) then
+        begin
+        _Form.BoundsRect := WP;
+        end;
 
       StatusOK;
       end;
