@@ -27,6 +27,7 @@ const
   HISTORY_FILE: TDataFile   = (Dirname: DATA_DIR; Filename: 'history.2p3');
   VARS_FILE: TDataFile      = (Dirname: DATA_DIR; Filename: 'variables.2p3');
   WORKSPACE_FILE: TDataFile = (Dirname: DATA_DIR; Filename: 'workspace.2p3');
+  WINPOS_FILE: TDataFile    = (Dirname: DATA_DIR; Filename: 'winpos.2p3');
 
   HOT_KEY: THotKey = (ModKey: MOD_ALT; VirtualKey: VK_K);
 
