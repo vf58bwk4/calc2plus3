@@ -53,8 +53,8 @@ implementation
 
 uses
   SysUtils, Windows, Controls, StdCtrls, Grids,
-  Config, ExprService, FormUtils, GridUtils, Workspace,
-  DisplayService, HistoryService;
+  ExprService, FormUtils, Workspace,
+  DisplayService, HistoryService, VariableService;
 
 const
   UNDO_MAX = 100;
@@ -68,7 +68,6 @@ type
 var
   _VarName:    TEdit;
   _Expression: TEdit;
-  _VarList:    TStringGrid;
   _Form:       TCalculator;
   FocusSet:    Boolean;
 
@@ -205,54 +204,24 @@ begin
     end;
 end;
 
-procedure UpsertVarList;
-var
-  Row: Integer;
-begin
-  for Row := _VarList.FixedRows to _VarList.RowCount - 1 do
-    begin
-    ExprService.UpsertVariable(_VarList.Cells[0, Row], StrToFloat(_VarList.Cells[1, Row]));
-    end;
-end;
 
-type
-  TOperationFunc = function(const A, B: Double): Double is nested;
 
-procedure CalculateAndModifyVariable(const OpFunc: TOperationFunc);
+
+{================ Interface routines ==============}
+
+procedure CalculateAndUpsertVariable;
 var
-  VarName:      String;
-  VarValue, OldVarValue, NewVarValue: Double;
-  VarFound:     Boolean;
-  DeleteRowIdx: Integer;
+  VarName: String;
 begin
     try
       begin
-      VarName        := Trim(_VarName.Text);
+      VarName       := Trim(_VarName.Text);
       _VarName.Text := VarName;
 
-      VarFound := FindRowByCol0Value(_VarList, VarName, DeleteRowIdx);
-      if VarFound then
-        begin
-        OldVarValue := StrToFloat(_VarList.Cells[1, DeleteRowIdx]);
-        end
-      else
-        begin
-        OldVarValue := 0.0;
-        end;
-      VarValue    := ExprService.Calculate(_Expression.Text);
-      NewVarValue := OpFunc(OldVarValue, VarValue);
-
-      ExprService.UpsertVariable(VarName, NewVarValue);
-      SaveGridToDataFile(_VarList, VARS_FILE);
-
-      if VarFound then
-        begin
-        _VarList.DeleteRow(DeleteRowIdx);
-        end;
-      _VarList.InsertRowWithValues(_VarList.FixedRows, [VarName, DisplayService.FormatNumber(NewVarValue)]);
+      VariableService.ModifyVariable(VarName, ExprService.Calculate(_Expression.Text));
 
       DisplayService.StatusOK;
-      end;
+      end
     except
     on E: Exception do
       begin
@@ -261,40 +230,46 @@ begin
     end;
 end;
 
-
-{================ Interface routines ==============}
-
-procedure CalculateAndUpsertVariable;
-
-  function OpFunc(const OldVal, NewVal: Double): Double;
-  begin
-    Result := NewVal;
-  end;
-
-begin
-  CalculateAndModifyVariable(@OpFunc);
-end;
-
 procedure CalculateAndAddVariable;
-
-  function OpFunc(const OldVal, NewVal: Double): Double;
-  begin
-    Result := OldVal + NewVal;
-  end;
-
+var
+  VarName: String;
 begin
-  CalculateAndModifyVariable(@OpFunc);
+    try
+      begin
+      VarName       := Trim(_VarName.Text);
+      _VarName.Text := VarName;
+
+      VariableService.ModifyVariable(VarName, VariableService.GetValue(VarName) + ExprService.Calculate(_Expression.Text));
+
+      DisplayService.StatusOK;
+      end
+    except
+    on E: Exception do
+      begin
+      DisplayService.StatusError(E.Message);
+      end;
+    end;
 end;
 
 procedure CalculateAndSubtractVariable;
-
-  function OpFunc(const OldVal, NewVal: Double): Double;
-  begin
-    Result := OldVal - NewVal;
-  end;
-
+var
+  VarName: String;
 begin
-  CalculateAndModifyVariable(@OpFunc);
+    try
+      begin
+      VarName       := Trim(_VarName.Text);
+      _VarName.Text := VarName;
+
+      VariableService.ModifyVariable(VarName, VariableService.GetValue(VarName) - ExprService.Calculate(_Expression.Text));
+
+      DisplayService.StatusOK;
+      end
+    except
+    on E: Exception do
+      begin
+      DisplayService.StatusError(E.Message);
+      end;
+    end;
 end;
 
 procedure CalculateAndInsertInHistory;
@@ -347,32 +322,32 @@ end;
 
 procedure CopyFromVarListToExpressionOnKey;
 begin
-  DoActionFromSource(@InsertInExpression, @GetKeyDownCellValue, FROM_TWO_COLUMNS, _VarList);
+  DoActionFromSource(@InsertInExpression, @GetKeyDownCellValue, FROM_TWO_COLUMNS, VariableService.Grid);
 end;
 
 procedure CopyFromVarListToExpressionOnClick;
 begin
-  DoActionFromSource(@InsertInExpression, @GetClickedCellValue, FROM_TWO_COLUMNS, _VarList);
+  DoActionFromSource(@InsertInExpression, @GetClickedCellValue, FROM_TWO_COLUMNS, VariableService.Grid);
 end;
 
 procedure ReplaceExpressionFromVarListOnClick;
 begin
-  DoActionFromSource(@ReplaceExpression, @GetClickedCellValue, FROM_TWO_COLUMNS, _VarList);
+  DoActionFromSource(@ReplaceExpression, @GetClickedCellValue, FROM_TWO_COLUMNS, VariableService.Grid);
 end;
 
 procedure ReplaceExpressionFromVarListOnKey;
 begin
-  DoActionFromSource(@ReplaceExpression, @GetKeyDownCellValue, FROM_TWO_COLUMNS, _VarList);
+  DoActionFromSource(@ReplaceExpression, @GetKeyDownCellValue, FROM_TWO_COLUMNS, VariableService.Grid);
 end;
 
 procedure ReplaceVarNameFromVarListOnClick;
 begin
-  DoActionFromSource(@ReplaceVarName, @GetClickedCellValue, FROM_ONE_COLUMN, _VarList);
+  DoActionFromSource(@ReplaceVarName, @GetClickedCellValue, FROM_ONE_COLUMN, VariableService.Grid);
 end;
 
 procedure ReplaceVarNameFromVarListOnKey;
 begin
-  DoActionFromSource(@ReplaceVarName, @GetKeyDownCellValue, FROM_ONE_COLUMN, _VarList);
+  DoActionFromSource(@ReplaceVarName, @GetKeyDownCellValue, FROM_ONE_COLUMN, VariableService.Grid);
 end;
 
 procedure DoCtrlBackspace;
@@ -386,28 +361,8 @@ begin
 end;
 
 procedure RemoveVariable;
-var
-  DeleteRowIdx: Integer;
-  VarName:      String;
 begin
-    try
-      begin
-      DeleteRowIdx := GetClickedGridRowIndex(_VarList);
-      VarName      := _VarList.Cells[_VarList.FixedCols, DeleteRowIdx];
-
-      _VarList.DeleteRow(DeleteRowIdx);
-      ExprService.RemoveVariable(VarName);
-
-      SaveGridToDataFile(_VarList, VARS_FILE);
-
-      DisplayService.StatusOK;
-      end
-    except
-    on E: Exception do
-      begin
-      DisplayService.StatusError(E.Message);
-      end;
-    end;
+  VariableService.RemoveItem;
 end;
 
 procedure RemoveHistoryItem;
@@ -441,7 +396,6 @@ begin
     begin
     _VarName    := VarName;
     _Expression := Expression;
-    _VarList    := VarList;
     end;
 end;
 
@@ -452,8 +406,7 @@ var
 begin
   DisplayService.Initialize(_Form.StatusBar);
   HistoryService.Initialize(_Form.History);
-
-  _VarList.AutoFillColumns := True;
+  VariableService.Initialize(_Form.VarList);
 
   SetEditMargins(_VarName, 8, 8);
   SetEditMargins(_Expression, 8, 8);
@@ -461,8 +414,6 @@ begin
 
     try
       begin
-      LoadGridFromDataFile(_VarList, VARS_FILE);
-      UpsertVarList;
 
       WS               := Workspace.LoadWorkspace;
       _VarName.Text    := WS.VarName;

@@ -107,6 +107,11 @@
         <UnitName Value="HistoryService"/>
       </Unit>
       <Unit>
+        <Filename Value="services\variableservice.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="VariableService"/>
+      </Unit>
+      <Unit>
         <Filename Value="services\exprservice.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="ExprService"/>
