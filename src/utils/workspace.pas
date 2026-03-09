@@ -24,9 +24,8 @@ uses
 const
   COL_KEY        = 0;
   COL_VALUE      = 1;
-  ROW_HEADER     = 0;
-  ROW_VARNAME    = 1;
-  ROW_EXPRESSION = 2;
+  ROW_VARNAME    = 0;
+  ROW_EXPRESSION = 1;
 
 procedure SaveWorkspace(const VarName, Expression: String);
 var
@@ -43,8 +42,6 @@ begin
       CSV.Delimiter := ',';
         try
           begin
-          CSV.Cells[COL_KEY,   ROW_HEADER]     := 'key';
-          CSV.Cells[COL_VALUE, ROW_HEADER]     := 'value';
           CSV.Cells[COL_KEY,   ROW_VARNAME]    := 'varname';
           CSV.Cells[COL_VALUE, ROW_VARNAME]    := VarName;
           CSV.Cells[COL_KEY,   ROW_EXPRESSION] := 'expression';
