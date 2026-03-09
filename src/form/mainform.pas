@@ -193,6 +193,14 @@ end;
 
 procedure TCalculator.ExpressionKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
+  if IsKeyCombinationMatch(Key, Shift, [VK_Z], [ssCtrl]) then
+    begin
+    CalcService.UndoExpression;
+    end;
+  if IsKeyCombinationMatch(Key, Shift, [VK_Y], [ssCtrl]) then
+    begin
+    CalcService.RedoExpression;
+    end;
   if IsKeyCombinationMatch(Key, Shift, [VK_BACK], [ssCtrl]) then
     begin
     CalcService.DoCtrlBackspace;
@@ -228,6 +236,11 @@ begin
         SelectAllEditText(Expression);
         end;
     end;
+end;
+
+procedure TCalculator.ExpressionChange(Sender: TObject);
+begin
+  CalcService.ExpressionChange;
 end;
 
 procedure TCalculator.HistoryKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);

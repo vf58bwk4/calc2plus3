@@ -38,6 +38,10 @@ procedure RemoveHistoryItem;
 
 procedure SetFocus;
 
+procedure ExpressionChange;
+procedure UndoExpression;
+procedure RedoExpression;
+
 procedure SaveWorkspace;
 procedure SaveWindowPos;
 
@@ -51,6 +55,15 @@ uses
   SysUtils, Windows, Controls, StdCtrls, ComCtrls, Grids,
   Config, ExprService, DataDir, FormUtils, GridUtils, Workspace;
 
+const
+  UNDO_MAX = 100;
+
+type
+  TExprState = record
+    Text:     String;
+    SelStart: Integer;
+  end;
+
 var
   _History:    TStringGrid;
   _VarName:    TEdit;
@@ -60,7 +73,54 @@ var
   _Form:       TCalculator;
   FocusSet:    Boolean;
 
+  _UndoStack:        array[0..UNDO_MAX - 1] of TExprState;
+  _RedoStack:        array[0..UNDO_MAX - 1] of TExprState;
+  _UndoHead:         Integer;   { next write position }
+  _UndoCount:        Integer;
+  _RedoHead:         Integer;   { next write position }
+  _RedoCount:        Integer;
+  _SuppressUndoPush: Boolean;
+
   {================ Private routines ================}
+
+procedure UndoPush(const State: TExprState); inline;
+begin
+  _UndoStack[_UndoHead] := State;
+  _UndoHead  := (_UndoHead + 1) mod UNDO_MAX;
+  if _UndoCount < UNDO_MAX then Inc(_UndoCount);
+end;
+
+function UndoPop: TExprState; inline;
+begin
+  _UndoHead := (_UndoHead - 1 + UNDO_MAX) mod UNDO_MAX;
+  Result    := _UndoStack[_UndoHead];
+  Dec(_UndoCount);
+end;
+
+function UndoPeek: TExprState; inline;
+begin
+  Result := _UndoStack[(_UndoHead - 1 + UNDO_MAX) mod UNDO_MAX];
+end;
+
+procedure RedoPush(const State: TExprState); inline;
+begin
+  _RedoStack[_RedoHead] := State;
+  _RedoHead  := (_RedoHead + 1) mod UNDO_MAX;
+  if _RedoCount < UNDO_MAX then Inc(_RedoCount);
+end;
+
+function RedoPop: TExprState; inline;
+begin
+  _RedoHead := (_RedoHead - 1 + UNDO_MAX) mod UNDO_MAX;
+  Result    := _RedoStack[_RedoHead];
+  Dec(_RedoCount);
+end;
+
+function ExprState: TExprState; inline;
+begin
+  Result.Text     := _Expression.Text;
+  Result.SelStart := _Expression.SelStart;
+end;
 
 procedure StatusOK; inline;
 begin
@@ -488,6 +548,8 @@ begin
       _VarName.Text    := WS.VarName;
       _Expression.Text := WS.Expression;
 
+      UndoPush(ExprState);
+
       WP := Workspace.AdjustWindowPos(Workspace.LoadWindowPos);
       if (WP.Right > WP.Left) and (WP.Bottom > WP.Top) then
         begin
@@ -504,5 +566,39 @@ begin
     end;
 end;
 
+procedure ExpressionChange;
+begin
+  if _SuppressUndoPush then Exit;
+  if (_UndoCount > 0) and (_Expression.Text = UndoPeek.Text) then Exit;
+  UndoPush(ExprState);
+  _RedoCount := 0;
+  _RedoHead  := 0;
+end;
+
+procedure UndoExpression;
+var
+  Prev: TExprState;
+begin
+  if _UndoCount < 2 then Exit;
+  RedoPush(UndoPop);
+  Prev := UndoPeek;
+  _SuppressUndoPush    := True;
+  _Expression.Text     := Prev.Text;
+  _Expression.SelStart := Prev.SelStart;
+  _SuppressUndoPush    := False;
+end;
+
+procedure RedoExpression;
+var
+  Next: TExprState;
+begin
+  if _RedoCount = 0 then Exit;
+  Next := RedoPop;
+  UndoPush(Next);
+  _SuppressUndoPush    := True;
+  _Expression.Text     := Next.Text;
+  _Expression.SelStart := Next.SelStart;
+  _SuppressUndoPush    := False;
+end;
 
 end.
