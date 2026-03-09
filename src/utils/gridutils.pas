@@ -23,13 +23,17 @@ function FindRowByCol0Value(const Grid: TStringGrid; const Col0Value: String; ou
 implementation
 
 uses
-  SysUtils, Controls, CsvDocument;
+  SysUtils, Windows, Controls, CsvDocument;
 
 procedure LoadStringGridFromCSV(Grid: TStringGrid; const Filename: String; const Delimiter: Char);
 var
   CSV:      TCSVDocument;
   Row, Col: Integer;
 begin
+  // Clean up any stale temp file left by a previous crashed save
+  if FileExists(Filename + '.tmp') then
+    SysUtils.DeleteFile(Filename + '.tmp');
+
   if not FileExists(Filename) then
     begin
     Exit;
@@ -61,8 +65,10 @@ end;
 procedure SaveStringGridToCSV(const Grid: TStringGrid; const Filename: String; const Delimiter: Char);
 var
   CSV:      TCSVDocument;
+  TmpFile:  String;
   Row, Col: Integer;
 begin
+  TmpFile       := Filename + '.tmp';
   CSV           := TCSVDocument.Create;
   CSV.Delimiter := Delimiter;
     try
@@ -74,12 +80,19 @@ begin
           CSV.Cells[Col, Row] := Grid.Cells[Grid.FixedCols + Col, Grid.FixedRows + Row];
           end;
         end;
-      CSV.SaveToFile(Filename);
+      CSV.SaveToFile(TmpFile);
       end;
     finally
       begin
       CSV.Free;
       end;
+    end;
+
+  // Atomically replace the real file with the fully-written temp file
+  if not MoveFileEx(PChar(TmpFile), PChar(Filename), MOVEFILE_REPLACE_EXISTING) then
+    begin
+    SysUtils.DeleteFile(TmpFile);
+    raise Exception.CreateFmt('Could not save file "%s" (error %d)', [Filename, GetLastError]);
     end;
 end;
 
