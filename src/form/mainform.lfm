@@ -29,6 +29,7 @@ object Calculator: TCalculator
     ParentFont = False
     TabOrder = 1
     OnKeyDown = ExpressionKeyDown
+    OnChange = ExpressionChange
   end
   object VarName: TEdit
     Left = 8
