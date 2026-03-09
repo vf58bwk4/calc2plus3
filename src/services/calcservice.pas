@@ -52,8 +52,9 @@ procedure Initialize;
 implementation
 
 uses
-  SysUtils, Windows, Controls, StdCtrls, ComCtrls, Grids,
-  Config, ExprService, DataDir, FormUtils, GridUtils, Workspace;
+  SysUtils, Windows, Controls, StdCtrls, Grids,
+  Config, ExprService, DataDir, FormUtils, GridUtils, Workspace,
+  DisplayService;
 
 const
   UNDO_MAX = 100;
@@ -69,7 +70,6 @@ var
   _VarName:    TEdit;
   _Expression: TEdit;
   _VarList:    TStringGrid;
-  _StatusBar:  TStatusBar;
   _Form:       TCalculator;
   FocusSet:    Boolean;
 
@@ -122,15 +122,7 @@ begin
   Result.SelStart := _Expression.SelStart;
 end;
 
-procedure StatusOK; inline;
-begin
-  _StatusBar.SimpleText := 'OK';
-end;
 
-procedure StatusError(const Message: String); inline;
-begin
-  _StatusBar.SimpleText := 'ERROR: ' + Message;
-end;
 
 procedure LoadGrid(Grid: TStringGrid; const DataFile: TDataFile);
 var
@@ -158,12 +150,12 @@ begin
       begin
       ActionProc(GetValueFunc(Source, GetValueFuncParam));
 
-      StatusOK;
+      DisplayService.StatusOK;
       end;
     except
     on E: Exception do
       begin
-      StatusError(E.Message);
+      DisplayService.StatusError(E.Message);
       end;
     end;
 end;
@@ -278,14 +270,14 @@ begin
         begin
         _VarList.DeleteRow(DeleteRowIdx);
         end;
-      _VarList.InsertRowWithValues(_VarList.FixedRows, [VarName, NewVarValue.ToString]);
+      _VarList.InsertRowWithValues(_VarList.FixedRows, [VarName, DisplayService.FormatNumber(NewVarValue)]);
 
-      StatusOK;
+      DisplayService.StatusOK;
       end;
     except
     on E: Exception do
       begin
-      StatusError(E.Message);
+      DisplayService.StatusError(E.Message);
       end;
     end;
 end;
@@ -367,7 +359,7 @@ begin
     try
       begin
       NewExpression := _Expression.Text;
-      NewResult     := ExprService.Calculate(NewExpression).ToString;
+      NewResult     := DisplayService.FormatNumber(ExprService.Calculate(NewExpression));
 
       _Expression.Text     := NewResult;
       _Expression.SelStart := Length(NewResult);
@@ -375,12 +367,12 @@ begin
       InsertInHistory;
       SaveGrid(_History, HISTORY_FILE);
 
-      StatusOK;
+      DisplayService.StatusOK;
       end
     except
     on E: Exception do
       begin
-      StatusError(E.Message);
+      DisplayService.StatusError(E.Message);
       end;
     end;
 end;
@@ -464,12 +456,12 @@ begin
 
       SaveGrid(_VarList, VARS_FILE);
 
-      StatusOK;
+      DisplayService.StatusOK;
       end
     except
     on E: Exception do
       begin
-      StatusError(E.Message);
+      DisplayService.StatusError(E.Message);
       end;
     end;
 end;
@@ -482,12 +474,12 @@ begin
 
       SaveGrid(_History, HISTORY_FILE);
 
-      StatusOK;
+      DisplayService.StatusOK;
       end
     except
     on E: Exception do
       begin
-      StatusError(E.Message);
+      DisplayService.StatusError(E.Message);
       end;
     end;
 end;
@@ -520,7 +512,6 @@ begin
     _VarName    := VarName;
     _Expression := Expression;
     _VarList    := VarList;
-    _StatusBar  := StatusBar;
     end;
 end;
 
@@ -529,6 +520,8 @@ var
   WS: TWorkspaceState;
   WP: TRect;
 begin
+  DisplayService.Initialize(_Form.StatusBar);
+
   _History.AutoFillColumns := True;
   _VarList.AutoFillColumns := True;
 
@@ -556,12 +549,12 @@ begin
         _Form.BoundsRect := WP;
         end;
 
-      StatusOK;
+      DisplayService.StatusOK;
       end;
     except
     on E: Exception do
       begin
-      StatusError(E.Message);
+      DisplayService.StatusError(E.Message);
       end;
     end;
 end;

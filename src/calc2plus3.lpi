@@ -97,6 +97,11 @@
         <UnitName Value="CalcService"/>
       </Unit>
       <Unit>
+        <Filename Value="services\displayservice.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="DisplayService"/>
+      </Unit>
+      <Unit>
         <Filename Value="services\exprservice.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="ExprService"/>
