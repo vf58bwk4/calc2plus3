@@ -34,6 +34,9 @@ type
     procedure ExpressionKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure ExpressionChange(Sender: TObject);
     procedure VarNameKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure VarNameChange(Sender: TObject);
+    procedure FormMove(Sender: TObject; var NewLeft, NewTop: Integer);
+    procedure FormResize(Sender: TObject);
     procedure HistoryKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure HistoryDblClick(Sender: TObject);
     procedure VariableListKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -146,6 +149,26 @@ end;
 procedure TCalculator.GridMouseWheelUp(Sender: TObject; Shift: TShiftState; MousePos: TPoint; var Handled: Boolean);
 begin
   GridUtils.StringGridMouseWheelUp(Sender as TStringGrid, Shift, MousePos, Handled);
+end;
+
+procedure TCalculator.ExpressionChange(Sender: TObject);
+begin
+  CalcService.SaveWorkspace;
+end;
+
+procedure TCalculator.VarNameChange(Sender: TObject);
+begin
+  CalcService.SaveWorkspace;
+end;
+
+procedure TCalculator.FormMove(Sender: TObject; var NewLeft, NewTop: Integer);
+begin
+  CalcService.SaveWindowPos;
+end;
+
+procedure TCalculator.FormResize(Sender: TObject);
+begin
+  CalcService.SaveWindowPos;
 end;
 
 procedure TCalculator.VarNameKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);

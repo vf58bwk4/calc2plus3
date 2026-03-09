@@ -12,6 +12,8 @@ object Calculator: TCalculator
   OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
+  OnMove = FormMove
+  OnResize = FormResize
   OnShow = FormShow
   object Expression: TEdit
     Left = 96
@@ -28,6 +30,7 @@ object Calculator: TCalculator
     ParentBidiMode = False
     ParentFont = False
     TabOrder = 1
+    OnChange = ExpressionChange
     OnKeyDown = ExpressionKeyDown
     OnChange = ExpressionChange
   end
@@ -46,6 +49,7 @@ object Calculator: TCalculator
     ParentFont = False
     TabOrder = 0
     Text = 'XYZ'
+    OnChange = VarNameChange
     OnKeyDown = VarNameKeyDown
   end
   object StatusBar: TStatusBar

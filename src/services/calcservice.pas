@@ -41,6 +41,8 @@ procedure SetFocus;
 procedure ExpressionChange;
 procedure UndoExpression;
 procedure RedoExpression;
+procedure SaveWorkspace;
+procedure SaveWindowPos;
 
 procedure Receive(const F: TCalculator);
 procedure Initialize;
@@ -50,7 +52,7 @@ implementation
 
 uses
   SysUtils, Windows, Controls, StdCtrls, ComCtrls, Grids,
-  Config, ExprService, DataDir, FormUtils, GridUtils;
+  Config, ExprService, DataDir, FormUtils, GridUtils, Workspace;
 
 const
   UNDO_MAX = 100;
@@ -67,6 +69,8 @@ var
   _Expression: TEdit;
   _VarList:    TStringGrid;
   _StatusBar:  TStatusBar;
+  _Form:       TCalculator;
+  FocusSet:    Boolean;
 
   _UndoStack:        array[0..UNDO_MAX - 1] of TExprState;
   _RedoStack:        array[0..UNDO_MAX - 1] of TExprState;
@@ -487,8 +491,15 @@ begin
     end;
 end;
 
-var
-  FocusSet: Boolean;
+procedure SaveWorkspace;
+begin
+  Workspace.SaveWorkspace(_VarName.Text, _Expression.Text);
+end;
+
+procedure SaveWindowPos;
+begin
+  Workspace.SaveWindowPos(_Form.BoundsRect);
+end;
 
 procedure SetFocus;
 begin
@@ -501,6 +512,7 @@ end;
 
 procedure Receive(const F: TCalculator);
 begin
+  _Form := F;
   with F do
     begin
     _History    := History;
@@ -512,6 +524,9 @@ begin
 end;
 
 procedure Initialize;
+var
+  WS: TWorkspaceState;
+  WP: TRect;
 begin
   _History.AutoFillColumns := True;
   _VarList.AutoFillColumns := True;
@@ -529,6 +544,16 @@ begin
       UpsertVarList;
 
       UndoPush(ExprState);
+      WS               := Workspace.LoadWorkspace;
+      _VarName.Text    := WS.VarName;
+      _Expression.Text := WS.Expression;
+
+      WP := Workspace.AdjustWindowPos(Workspace.LoadWindowPos);
+      if (WP.Right > WP.Left) and (WP.Bottom > WP.Top) then
+        begin
+        _Form.BoundsRect := WP;
+        end;
+
       StatusOK;
       end;
     except
