@@ -48,7 +48,7 @@ implementation
 
 uses
   SysUtils, Windows, Controls, StdCtrls, ComCtrls, Grids,
-  Config, ExprService, DataDir, FormUtils, GridUtils, CsvDocument;
+  Config, ExprService, DataDir, FormUtils, GridUtils, Workspace;
 
 var
   _History:    TStringGrid;
@@ -431,48 +431,8 @@ begin
 end;
 
 procedure SaveWorkspace;
-const
-  COL_KEY   = 0;
-  COL_VALUE = 1;
-  ROW_HEADER    = 0;
-  ROW_VARNAME    = 1;
-  ROW_EXPRESSION = 2;
-var
-  CSV:         TCSVDocument;
-  PathFilename: String;
-  TmpFilename: String;
 begin
-    try
-      begin
-      PathFilename := ForceDataDir(WORKSPACE_FILE.Dirname) + '\' + WORKSPACE_FILE.Filename;
-      TmpFilename  := PathFilename + '.tmp';
-
-      CSV           := TCSVDocument.Create;
-      CSV.Delimiter := ',';
-        try
-          begin
-          CSV.Cells[COL_KEY, ROW_HEADER]    := 'key';
-          CSV.Cells[COL_VALUE, ROW_HEADER]  := 'value';
-          CSV.Cells[COL_KEY, ROW_VARNAME]   := 'varname';
-          CSV.Cells[COL_VALUE, ROW_VARNAME] := _VarName.Text;
-          CSV.Cells[COL_KEY, ROW_EXPRESSION]   := 'expression';
-          CSV.Cells[COL_VALUE, ROW_EXPRESSION] := _Expression.Text;
-          CSV.SaveToFile(TmpFilename);
-          end;
-        finally
-          begin
-          CSV.Free;
-          end;
-        end;
-
-      if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
-        begin
-        SysUtils.DeleteFile(TmpFilename);
-        end;
-      end;
-    except
-      // Workspace save is best-effort; never surface errors to the user
-    end;
+  Workspace.SaveWorkspace(_VarName.Text, _Expression.Text);
 end;
 
 procedure SetFocus;
@@ -498,8 +458,7 @@ end;
 
 procedure Initialize;
 var
-  PathFilename: String;
-  CSV:          TCSVDocument;
+  WS: TWorkspaceState;
 begin
   _History.AutoFillColumns := True;
   _VarList.AutoFillColumns := True;
@@ -516,6 +475,10 @@ begin
       LoadGrid(_VarList, VARS_FILE);
       UpsertVarList;
 
+      WS               := Workspace.LoadWorkspace;
+      _VarName.Text    := WS.VarName;
+      _Expression.Text := WS.Expression;
+
       StatusOK;
       end;
     except
@@ -523,39 +486,6 @@ begin
       begin
       StatusError(E.Message);
       end;
-    end;
-
-  // Restore workspace (best-effort, errors silently ignored)
-    try
-      begin
-      PathFilename := GetDataDir(WORKSPACE_FILE.Dirname) + '\' + WORKSPACE_FILE.Filename;
-
-      // Clean up any stale temp file from a previous crashed save
-      if SysUtils.FileExists(PathFilename + '.tmp') then
-        SysUtils.DeleteFile(PathFilename + '.tmp');
-
-      if SysUtils.FileExists(PathFilename) then
-        begin
-        CSV           := TCSVDocument.Create;
-        CSV.Delimiter := ',';
-          try
-            begin
-            CSV.LoadFromFile(PathFilename);
-            // Row 0 is the header; data starts at row 1
-            if CSV.RowCount > 1 then
-              _VarName.Text := CSV.Cells[1, 1];
-            if CSV.RowCount > 2 then
-              _Expression.Text := CSV.Cells[1, 2];
-            end;
-          finally
-            begin
-            CSV.Free;
-            end;
-          end;
-        end;
-      end;
-    except
-      // Workspace restore is best-effort
     end;
 end;
 
