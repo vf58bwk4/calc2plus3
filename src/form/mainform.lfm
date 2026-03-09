@@ -28,6 +28,7 @@ object Calculator: TCalculator
     ParentBidiMode = False
     ParentFont = False
     TabOrder = 1
+    OnChange = ExpressionChange
     OnKeyDown = ExpressionKeyDown
   end
   object VarName: TEdit
@@ -45,6 +46,7 @@ object Calculator: TCalculator
     ParentFont = False
     TabOrder = 0
     Text = 'XYZ'
+    OnChange = VarNameChange
     OnKeyDown = VarNameKeyDown
   end
   object StatusBar: TStatusBar

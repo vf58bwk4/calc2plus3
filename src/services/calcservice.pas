@@ -38,6 +38,8 @@ procedure RemoveHistoryItem;
 
 procedure SetFocus;
 
+procedure SaveWorkspace;
+
 procedure Receive(const F: TCalculator);
 procedure Initialize;
 
@@ -46,7 +48,7 @@ implementation
 
 uses
   SysUtils, Windows, Controls, StdCtrls, ComCtrls, Grids,
-  Config, ExprService, DataDir, FormUtils, GridUtils;
+  Config, ExprService, DataDir, FormUtils, GridUtils, Workspace;
 
 var
   _History:    TStringGrid;
@@ -54,6 +56,7 @@ var
   _Expression: TEdit;
   _VarList:    TStringGrid;
   _StatusBar:  TStatusBar;
+  FocusSet:    Boolean;
 
   {================ Private routines ================}
 
@@ -427,8 +430,10 @@ begin
     end;
 end;
 
-var
-  FocusSet: Boolean;
+procedure SaveWorkspace;
+begin
+  Workspace.SaveWorkspace(_VarName.Text, _Expression.Text);
+end;
 
 procedure SetFocus;
 begin
@@ -452,6 +457,8 @@ begin
 end;
 
 procedure Initialize;
+var
+  WS: TWorkspaceState;
 begin
   _History.AutoFillColumns := True;
   _VarList.AutoFillColumns := True;
@@ -467,6 +474,10 @@ begin
 
       LoadGrid(_VarList, VARS_FILE);
       UpsertVarList;
+
+      WS               := Workspace.LoadWorkspace;
+      _VarName.Text    := WS.VarName;
+      _Expression.Text := WS.Expression;
 
       StatusOK;
       end;
