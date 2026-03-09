@@ -41,6 +41,7 @@ procedure SetFocus;
 procedure ExpressionChange;
 procedure UndoExpression;
 procedure RedoExpression;
+
 procedure SaveWorkspace;
 procedure SaveWindowPos;
 
@@ -543,10 +544,11 @@ begin
       LoadGrid(_VarList, VARS_FILE);
       UpsertVarList;
 
-      UndoPush(ExprState);
       WS               := Workspace.LoadWorkspace;
       _VarName.Text    := WS.VarName;
       _Expression.Text := WS.Expression;
+
+      UndoPush(ExprState);
 
       WP := Workspace.AdjustWindowPos(Workspace.LoadWindowPos);
       if (WP.Right > WP.Left) and (WP.Bottom > WP.Top) then
