@@ -8,7 +8,7 @@ unit GridUtils;
 interface
 
 uses
-  Classes, Grids;
+  Classes, Grids, Config;
 
 procedure StringGridMouseWheelDown(SenderGrid: TStringGrid; const Shift: TShiftState; const MousePos: TPoint; var Handled: Boolean);
 procedure StringGridMouseWheelUp(SenderGrid: TStringGrid; const Shift: TShiftState; const MousePos: TPoint; var Handled: Boolean);
@@ -20,10 +20,13 @@ procedure SaveStringGridToCSV(const Grid: TStringGrid; const Filename: String; c
 
 function FindRowByCol0Value(const Grid: TStringGrid; const Col0Value: String; out aRow: Integer): Boolean;
 
+procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
+procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
+
 implementation
 
 uses
-  SysUtils, Windows, Controls, CsvDocument;
+  SysUtils, Windows, Controls, CsvDocument, DataDir;
 
 procedure LoadStringGridFromCSV(Grid: TStringGrid; const Filename: String; const Delimiter: Char);
 var
@@ -138,6 +141,22 @@ begin
       end;
     end;
   Result := False;
+end;
+
+procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
+var
+  PathFilename: String;
+begin
+  PathFilename := GetDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
+  LoadStringGridFromCSV(Grid, PathFilename);
+end;
+
+procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
+var
+  PathFilename: String;
+begin
+  PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
+  SaveStringGridToCSV(Grid, PathFilename);
 end;
 
 end.

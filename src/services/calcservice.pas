@@ -53,8 +53,8 @@ implementation
 
 uses
   SysUtils, Windows, Controls, StdCtrls, Grids,
-  Config, ExprService, DataDir, FormUtils, GridUtils, Workspace,
-  DisplayService;
+  Config, ExprService, FormUtils, GridUtils, Workspace,
+  DisplayService, HistoryService;
 
 const
   UNDO_MAX = 100;
@@ -66,7 +66,6 @@ type
   end;
 
 var
-  _History:    TStringGrid;
   _VarName:    TEdit;
   _Expression: TEdit;
   _VarList:    TStringGrid;
@@ -124,21 +123,7 @@ end;
 
 
 
-procedure LoadGrid(Grid: TStringGrid; const DataFile: TDataFile);
-var
-  PathFilename: String;
-begin
-  PathFilename := GetDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
-  LoadStringGridFromCSV(Grid, PathFilename);
-end;
 
-procedure SaveGrid(const Grid: TStringGrid; const DataFile: TDataFile);
-var
-  PathFilename: String;
-begin
-  PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
-  SaveStringGridToCSV(Grid, PathFilename);
-end;
 
 type
   TActionProc   = procedure(const Value: String);
@@ -230,12 +215,6 @@ begin
     end;
 end;
 
-procedure SetupHistory; inline;
-begin
-  _History.Row := _History.RowCount - 1;
-  _History.Col := 0;
-end;
-
 type
   TOperationFunc = function(const A, B: Double): Double is nested;
 
@@ -264,7 +243,7 @@ begin
       NewVarValue := OpFunc(OldVarValue, VarValue);
 
       ExprService.UpsertVariable(VarName, NewVarValue);
-      SaveGrid(_VarList, VARS_FILE);
+      SaveGridToDataFile(_VarList, VARS_FILE);
 
       if VarFound then
         begin
@@ -321,40 +300,6 @@ end;
 procedure CalculateAndInsertInHistory;
 var
   NewExpression, NewResult: String;
-
-  procedure InsertInHistory;
-  var
-    OldExpression, OldResult: String;
-    LastRowIdx:               Integer;
-
-    procedure HistoryInsertNewItem;
-    var
-      NewRowIdx: Integer;
-    begin
-      NewRowIdx                     := _History.RowCount;
-      _History.RowCount            := NewRowIdx + 1;
-      _History.Cells[0, NewRowIdx] := NewResult;
-      _History.Cells[1, NewRowIdx] := NewExpression;
-      _History.TopRow              := NewRowIdx;
-    end;
-
-  begin
-    if _History.RowCount = 0 then
-      begin
-      HistoryInsertNewItem;
-      end
-    else
-      begin
-      LastRowIdx    := _History.RowCount - 1;
-      OldResult     := _History.Cells[0, LastRowIdx];
-      OldExpression := _History.Cells[1, LastRowIdx];
-      if not ((NewResult = OldResult) and (NewExpression = OldExpression)) then
-        begin
-        HistoryInsertNewItem;
-        end;
-      end;
-  end;
-
 begin
     try
       begin
@@ -364,8 +309,7 @@ begin
       _Expression.Text     := NewResult;
       _Expression.SelStart := Length(NewResult);
 
-      InsertInHistory;
-      SaveGrid(_History, HISTORY_FILE);
+      HistoryService.InsertItem(NewResult, NewExpression);
 
       DisplayService.StatusOK;
       end
@@ -383,22 +327,22 @@ const
 
 procedure CopyFromHistoryToExpressionOnClick;
 begin
-  DoActionFromSource(@InsertInExpression, @GetClickedCellValue, FROM_TWO_COLUMNS, _History);
+  DoActionFromSource(@InsertInExpression, @GetClickedCellValue, FROM_TWO_COLUMNS, HistoryService.Grid);
 end;
 
 procedure CopyFromHistoryToExpressionOnKey;
 begin
-  DoActionFromSource(@InsertInExpression, @GetKeyDownCellValue, FROM_TWO_COLUMNS, _History);
+  DoActionFromSource(@InsertInExpression, @GetKeyDownCellValue, FROM_TWO_COLUMNS, HistoryService.Grid);
 end;
 
 procedure ReplaceExpressionFromHistoryOnClick;
 begin
-  DoActionFromSource(@ReplaceExpression, @GetClickedCellValue, FROM_TWO_COLUMNS, _History);
+  DoActionFromSource(@ReplaceExpression, @GetClickedCellValue, FROM_TWO_COLUMNS, HistoryService.Grid);
 end;
 
 procedure ReplaceExpressionFromHistoryOnKey;
 begin
-  DoActionFromSource(@ReplaceExpression, @GetKeyDownCellValue, FROM_TWO_COLUMNS, _History);
+  DoActionFromSource(@ReplaceExpression, @GetKeyDownCellValue, FROM_TWO_COLUMNS, HistoryService.Grid);
 end;
 
 procedure CopyFromVarListToExpressionOnKey;
@@ -454,7 +398,7 @@ begin
       _VarList.DeleteRow(DeleteRowIdx);
       ExprService.RemoveVariable(VarName);
 
-      SaveGrid(_VarList, VARS_FILE);
+      SaveGridToDataFile(_VarList, VARS_FILE);
 
       DisplayService.StatusOK;
       end
@@ -468,20 +412,7 @@ end;
 
 procedure RemoveHistoryItem;
 begin
-    try
-      begin
-      _History.DeleteRow(GetClickedGridRowIndex(_History));
-
-      SaveGrid(_History, HISTORY_FILE);
-
-      DisplayService.StatusOK;
-      end
-    except
-    on E: Exception do
-      begin
-      DisplayService.StatusError(E.Message);
-      end;
-    end;
+  HistoryService.RemoveItem;
 end;
 
 procedure SaveWorkspace;
@@ -508,7 +439,6 @@ begin
   _Form := F;
   with F do
     begin
-    _History    := History;
     _VarName    := VarName;
     _Expression := Expression;
     _VarList    := VarList;
@@ -521,8 +451,8 @@ var
   WP: TRect;
 begin
   DisplayService.Initialize(_Form.StatusBar);
+  HistoryService.Initialize(_Form.History);
 
-  _History.AutoFillColumns := True;
   _VarList.AutoFillColumns := True;
 
   SetEditMargins(_VarName, 8, 8);
@@ -531,10 +461,7 @@ begin
 
     try
       begin
-      LoadGrid(_History, HISTORY_FILE);
-      SetupHistory;
-
-      LoadGrid(_VarList, VARS_FILE);
+      LoadGridFromDataFile(_VarList, VARS_FILE);
       UpsertVarList;
 
       WS               := Workspace.LoadWorkspace;

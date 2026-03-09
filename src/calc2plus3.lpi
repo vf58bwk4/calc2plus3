@@ -102,6 +102,11 @@
         <UnitName Value="DisplayService"/>
       </Unit>
       <Unit>
+        <Filename Value="services\historyservice.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="HistoryService"/>
+      </Unit>
+      <Unit>
         <Filename Value="services\exprservice.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="ExprService"/>
