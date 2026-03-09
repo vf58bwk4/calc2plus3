@@ -53,8 +53,8 @@ implementation
 
 uses
   SysUtils, Windows, Controls, StdCtrls, Grids,
-  ExprService, FormUtils, Workspace,
-  DisplayService, HistoryService, VariableService;
+  ExprService, FormUtils,
+  DisplayService, HistoryService, VariableService, WorkspaceController;
 
 const
   UNDO_MAX = 100;
@@ -209,16 +209,22 @@ end;
 
 {================ Interface routines ==============}
 
-procedure CalculateAndUpsertVariable;
+type
+  TOperationFunc = function(const A, B: Double): Double is nested;
+
+procedure CalculateAndModifyVariable(const OpFunc: TOperationFunc);
 var
-  VarName: String;
+  VarName:  String;
+  VarValue: Double;
 begin
     try
       begin
       VarName       := Trim(_VarName.Text);
       _VarName.Text := VarName;
 
-      VariableService.ModifyVariable(VarName, ExprService.Calculate(_Expression.Text));
+      VarValue := ExprService.Calculate(_Expression.Text);
+
+      VariableService.ModifyVariable(VarName, OpFunc(VariableService.GetValue(VarName), VarValue));
 
       DisplayService.StatusOK;
       end
@@ -228,48 +234,39 @@ begin
       DisplayService.StatusError(E.Message);
       end;
     end;
+end;
+
+procedure CalculateAndUpsertVariable;
+
+  function OpFunc(const OldVal, NewVal: Double): Double;
+  begin
+    Result := NewVal;
+  end;
+
+begin
+  CalculateAndModifyVariable(@OpFunc);
 end;
 
 procedure CalculateAndAddVariable;
-var
-  VarName: String;
+
+  function OpFunc(const OldVal, NewVal: Double): Double;
+  begin
+    Result := OldVal + NewVal;
+  end;
+
 begin
-    try
-      begin
-      VarName       := Trim(_VarName.Text);
-      _VarName.Text := VarName;
-
-      VariableService.ModifyVariable(VarName, VariableService.GetValue(VarName) + ExprService.Calculate(_Expression.Text));
-
-      DisplayService.StatusOK;
-      end
-    except
-    on E: Exception do
-      begin
-      DisplayService.StatusError(E.Message);
-      end;
-    end;
+  CalculateAndModifyVariable(@OpFunc);
 end;
 
 procedure CalculateAndSubtractVariable;
-var
-  VarName: String;
+
+  function OpFunc(const OldVal, NewVal: Double): Double;
+  begin
+    Result := OldVal - NewVal;
+  end;
+
 begin
-    try
-      begin
-      VarName       := Trim(_VarName.Text);
-      _VarName.Text := VarName;
-
-      VariableService.ModifyVariable(VarName, VariableService.GetValue(VarName) - ExprService.Calculate(_Expression.Text));
-
-      DisplayService.StatusOK;
-      end
-    except
-    on E: Exception do
-      begin
-      DisplayService.StatusError(E.Message);
-      end;
-    end;
+  CalculateAndModifyVariable(@OpFunc);
 end;
 
 procedure CalculateAndInsertInHistory;
@@ -372,12 +369,12 @@ end;
 
 procedure SaveWorkspace;
 begin
-  Workspace.SaveWorkspace(_VarName.Text, _Expression.Text);
+  WorkspaceController.SaveWorkspace(_VarName.Text, _Expression.Text);
 end;
 
 procedure SaveWindowPos;
 begin
-  Workspace.SaveWindowPos(_Form.BoundsRect);
+  WorkspaceController.SaveWindowPos(_Form);
 end;
 
 procedure SetFocus;
@@ -400,13 +397,8 @@ begin
 end;
 
 procedure Initialize;
-var
-  WS: TWorkspaceState;
-  WP: TRect;
 begin
-  DisplayService.Initialize(_Form.StatusBar);
-  HistoryService.Initialize(_Form.History);
-  VariableService.Initialize(_Form.VarList);
+  WorkspaceController.Initialize(_Form);
 
   SetEditMargins(_VarName, 8, 8);
   SetEditMargins(_Expression, 8, 8);
@@ -414,18 +406,7 @@ begin
 
     try
       begin
-
-      WS               := Workspace.LoadWorkspace;
-      _VarName.Text    := WS.VarName;
-      _Expression.Text := WS.Expression;
-
       UndoPush(ExprState);
-
-      WP := Workspace.AdjustWindowPos(Workspace.LoadWindowPos);
-      if (WP.Right > WP.Left) and (WP.Bottom > WP.Top) then
-        begin
-        _Form.BoundsRect := WP;
-        end;
 
       DisplayService.StatusOK;
       end;
