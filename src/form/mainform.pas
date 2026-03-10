@@ -151,11 +151,6 @@ begin
   GridUtils.StringGridMouseWheelUp(Sender as TStringGrid, Shift, MousePos, Handled);
 end;
 
-procedure TCalculator.ExpressionChange(Sender: TObject);
-begin
-  CalcService.SaveWorkspace;
-end;
-
 procedure TCalculator.VarNameChange(Sender: TObject);
 begin
   CalcService.SaveWorkspace;
@@ -241,6 +236,7 @@ end;
 procedure TCalculator.ExpressionChange(Sender: TObject);
 begin
   CalcService.ExpressionChange;
+  CalcService.SaveWorkspace;
 end;
 
 procedure TCalculator.HistoryKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
