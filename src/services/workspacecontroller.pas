@@ -16,7 +16,7 @@ procedure SaveWindowPos(const F: TCalculator);
 implementation
 
 uses
-  SysUtils, Workspace,
+  SysUtils, Types, Workspace,
   DisplayService, HistoryService, VariableService;
 
 procedure Initialize(const F: TCalculator);
