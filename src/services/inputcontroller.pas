@@ -1,4 +1,4 @@
-unit CalcService;
+unit InputController;
 
 {$mode ObjFPC}
 {$H+}
@@ -42,11 +42,7 @@ procedure ExpressionChange;
 procedure UndoExpression;
 procedure RedoExpression;
 
-procedure SaveWorkspace;
-procedure SaveWindowPos;
-
-procedure Receive(const F: TCalculator);
-procedure Initialize;
+procedure Initialize(const F: TCalculator);
 
 
 implementation
@@ -54,7 +50,7 @@ implementation
 uses
   SysUtils, Windows, Controls, StdCtrls, Grids,
   ExprService, FormUtils,
-  DisplayService, HistoryService, VariableService, WorkspaceController;
+  DisplayService, HistoryService, VariableService;
 
 const
   UNDO_MAX = 100;
@@ -68,7 +64,6 @@ type
 var
   _VarName:    TEdit;
   _Expression: TEdit;
-  _Form:       TCalculator;
   FocusSet:    Boolean;
 
   _UndoStack:        array[0..UNDO_MAX - 1] of TExprState;
@@ -367,16 +362,6 @@ begin
   HistoryService.RemoveItem;
 end;
 
-procedure SaveWorkspace;
-begin
-  WorkspaceController.SaveWorkspace(_VarName.Text, _Expression.Text);
-end;
-
-procedure SaveWindowPos;
-begin
-  WorkspaceController.SaveWindowPos(_Form);
-end;
-
 procedure SetFocus;
 begin
   if not FocusSet then
@@ -386,19 +371,13 @@ begin
     end;
 end;
 
-procedure Receive(const F: TCalculator);
+procedure Initialize(const F: TCalculator);
 begin
-  _Form := F;
   with F do
     begin
     _VarName    := VarName;
     _Expression := Expression;
     end;
-end;
-
-procedure Initialize;
-begin
-  WorkspaceController.Initialize(_Form);
 
   SetEditMargins(_VarName, 8, 8);
   SetEditMargins(_Expression, 8, 8);

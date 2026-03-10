@@ -61,7 +61,7 @@ implementation
 {$R *.lfm}
 
 uses
-  Config, FormUtils, GridUtils, CalcService;
+  Config, FormUtils, GridUtils, InputController, WorkspaceController;
 
 const
   HOTKEY_ID = 1;
@@ -73,8 +73,8 @@ begin
   Caption       := Application.Title;
   TrayIcon.Hint := Application.Title;
 
-  CalcService.Receive(self);
-  CalcService.Initialize;
+  WorkspaceController.Initialize(self);
+  InputController.Initialize(self);
 end;
 
 procedure TCalculator.FormDestroy(Sender: TObject);
@@ -84,7 +84,7 @@ end;
 
 procedure TCalculator.FormShow(Sender: TObject);
 begin
-  CalcService.SetFocus;
+  InputController.SetFocus;
 end;
 
 procedure TCalculator.FormClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -153,36 +153,36 @@ end;
 
 procedure TCalculator.VarNameChange(Sender: TObject);
 begin
-  CalcService.SaveWorkspace;
+  WorkspaceController.SaveWorkspace(VarName.Text, Expression.Text);
 end;
 
 procedure TCalculator.FormMove(Sender: TObject; var NewLeft, NewTop: Integer);
 begin
-  CalcService.SaveWindowPos;
+  WorkspaceController.SaveWindowPos(self);
 end;
 
 procedure TCalculator.FormResize(Sender: TObject);
 begin
-  CalcService.SaveWindowPos;
+  WorkspaceController.SaveWindowPos(self);
 end;
 
 procedure TCalculator.VarNameKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   if IsKeyCombinationMatch(Key, Shift, [VK_BACK], [ssCtrl]) then
     begin
-    CalcService.ClearVarName;
+    InputController.ClearVarName;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssCtrl]) then
     begin
-    CalcService.CalculateAndUpsertVariable;
+    InputController.CalculateAndUpsertVariable;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_ADD, VK_OEM_PLUS], [ssCtrl]) then
     begin
-    CalcService.CalculateAndAddVariable;
+    InputController.CalculateAndAddVariable;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_SUBTRACT, VK_OEM_MINUS], [ssCtrl]) then
     begin
-    CalcService.CalculateAndSubtractVariable;
+    InputController.CalculateAndSubtractVariable;
     end;
 end;
 
@@ -190,31 +190,31 @@ procedure TCalculator.ExpressionKeyDown(Sender: TObject; var Key: Word; Shift: T
 begin
   if IsKeyCombinationMatch(Key, Shift, [VK_Z], [ssCtrl]) then
     begin
-    CalcService.UndoExpression;
+    InputController.UndoExpression;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_Y], [ssCtrl]) then
     begin
-    CalcService.RedoExpression;
+    InputController.RedoExpression;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_BACK], [ssCtrl]) then
     begin
-    CalcService.DoCtrlBackspace;
+    InputController.DoCtrlBackspace;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssCtrl]) then
     begin
-    CalcService.CalculateAndUpsertVariable;
+    InputController.CalculateAndUpsertVariable;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_ADD, VK_OEM_PLUS], [ssCtrl]) then
     begin
-    CalcService.CalculateAndAddVariable;
+    InputController.CalculateAndAddVariable;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_SUBTRACT, VK_OEM_MINUS], [ssCtrl]) then
     begin
-    CalcService.CalculateAndSubtractVariable;
+    InputController.CalculateAndSubtractVariable;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], []) then
     begin
-    CalcService.CalculateAndInsertInHistory;
+    InputController.CalculateAndInsertInHistory;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_ESCAPE], []) then
     begin
@@ -224,7 +224,7 @@ begin
       end
     else if IsEditTextSelected(Expression) then
         begin
-        CalcService.DoCtrlBackspace;
+        InputController.DoCtrlBackspace;
         end
       else
         begin
@@ -235,19 +235,19 @@ end;
 
 procedure TCalculator.ExpressionChange(Sender: TObject);
 begin
-  CalcService.ExpressionChange;
-  CalcService.SaveWorkspace;
+  InputController.ExpressionChange;
+  WorkspaceController.SaveWorkspace(VarName.Text, Expression.Text);
 end;
 
 procedure TCalculator.HistoryKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssCtrl]) then
     begin
-    CalcService.ReplaceExpressionFromHistoryOnKey;
+    InputController.ReplaceExpressionFromHistoryOnKey;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], []) then
     begin
-    CalcService.CopyFromHistoryToExpressionOnKey;
+    InputController.CopyFromHistoryToExpressionOnKey;
     end;
 end;
 
@@ -259,15 +259,15 @@ begin
 
   if CheckModsState(Mods, []) then
     begin
-    CalcService.CopyFromHistoryToExpressionOnClick;
+    InputController.CopyFromHistoryToExpressionOnClick;
     end;
   if CheckModsState(Mods, [ssCtrl]) then
     begin
-    CalcService.ReplaceExpressionFromHistoryOnClick;
+    InputController.ReplaceExpressionFromHistoryOnClick;
     end;
   if CheckModsState(Mods, [ssCtrl, ssAlt]) then
     begin
-    CalcService.RemoveHistoryItem;
+    InputController.RemoveHistoryItem;
     end;
 end;
 
@@ -275,15 +275,15 @@ procedure TCalculator.VariableListKeyDown(Sender: TObject; var Key: Word; Shift:
 begin
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssCtrl]) then
     begin
-    CalcService.ReplaceExpressionFromVarListOnKey;
+    InputController.ReplaceExpressionFromVarListOnKey;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], []) then
     begin
-    CalcService.CopyFromVarListToExpressionOnKey;
+    InputController.CopyFromVarListToExpressionOnKey;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssShift]) then
     begin
-    CalcService.ReplaceVarNameFromVarListOnKey;
+    InputController.ReplaceVarNameFromVarListOnKey;
     end;
 end;
 
@@ -295,19 +295,19 @@ begin
 
   if CheckModsState(Mods, []) then
     begin
-    CalcService.CopyFromVarListToExpressionOnClick;
+    InputController.CopyFromVarListToExpressionOnClick;
     end;
   if CheckModsState(Mods, [ssCtrl]) then
     begin
-    CalcService.ReplaceExpressionFromVarListOnClick;
+    InputController.ReplaceExpressionFromVarListOnClick;
     end;
   if CheckModsState(Mods, [ssShift]) then
     begin
-    CalcService.ReplaceVarNameFromVarListOnClick;
+    InputController.ReplaceVarNameFromVarListOnClick;
     end;
   if CheckModsState(Mods, [ssCtrl, ssAlt]) then
     begin
-    CalcService.RemoveVariable;
+    InputController.RemoveVariable;
     end;
 end;
 

@@ -92,9 +92,9 @@
         <UnitName Value="MainForm" />
       </Unit>
       <Unit>
-        <Filename Value="services\calcservice.pas" />
+        <Filename Value="services\inputcontroller.pas" />
         <IsPartOfProject Value="True" />
-        <UnitName Value="CalcService" />
+        <UnitName Value="InputController" />
       </Unit>
       <Unit>
         <Filename Value="services\displayservice.pas" />
