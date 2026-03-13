@@ -8,7 +8,8 @@ unit MainForm;
 interface
 
 uses
-  Classes, Forms, Windows, Controls, StdCtrls, ComCtrls, Grids, ExtCtrls, Menus;
+  Classes, LCLType, Controls, StdCtrls, ComCtrls, Grids, ExtCtrls, Menus,
+  Forms, LCLIntf, Windows, Messages;
 
 type
 
@@ -33,10 +34,9 @@ type
 
     procedure ExpressionKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure ExpressionChange(Sender: TObject);
-    procedure VarNameKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure VarNameChange(Sender: TObject);
-    procedure FormMove(Sender: TObject; var NewLeft, NewTop: Integer);
-    procedure FormResize(Sender: TObject);
+    procedure FormChangeBounds(Sender: TObject);
+    procedure VarNameKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure HistoryKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure HistoryDblClick(Sender: TObject);
     procedure VariableListKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -61,20 +61,45 @@ implementation
 {$R *.lfm}
 
 uses
-  Config, FormUtils, GridUtils, InputController, WorkspaceController;
+  Config, FormUtils, GridUtils, InputController, Autorun,
+  Storage, DisplayService, HistoryService, VariableService, UndoRedoService, Types;
 
 const
   HOTKEY_ID = 1;
 
+
 procedure TCalculator.FormCreate(Sender: TObject);
+var
+  WS: TWorkspaceState;
+  WP: TPoint;
 begin
   Windows.RegisterHotKey(Handle, HOTKEY_ID, HOT_KEY.ModKey, HOT_KEY.VirtualKey);
 
   Caption       := Application.Title;
   TrayIcon.Hint := Application.Title;
 
-  WorkspaceController.Initialize(self);
+  WP   := FormUtils.AdjustWindowPos(Storage.LoadWindowPos, Width, Height);
+  Left := WP.X;
+  Top  := WP.Y;
+
+  WS              := Storage.LoadWorkspace;
+  VarName.Text    := WS.VarName;
+  Expression.Text := WS.Expression;
+
   InputController.Initialize(self);
+  DisplayService.Initialize(StatusBar);
+  HistoryService.Initialize(History);
+  VariableService.Initialize(VarList);
+  UndoRedoService.SetExpressionState(Expression.Text, Expression.SelStart);
+
+  SetEditMargins(VarName, 8, 8);
+  SetEditMargins(Expression, 8, 8);
+  SetEditWordBreakCallback(Expression);
+
+  VarName.OnChange    := @VarNameChange;
+  Expression.OnChange := @ExpressionChange;
+
+  DisplayService.StatusOK;
 end;
 
 procedure TCalculator.FormDestroy(Sender: TObject);
@@ -116,6 +141,7 @@ end;
 
 procedure TCalculator.MenuItemCloseClick(Sender: TObject);
 begin
+  UnregisterAutoRun(APP_NAME);
   Application.Terminate;
 end;
 
@@ -151,19 +177,20 @@ begin
   GridUtils.StringGridMouseWheelUp(Sender as TStringGrid, Shift, MousePos, Handled);
 end;
 
+procedure TCalculator.ExpressionChange(Sender: TObject);
+begin
+  InputController.ExpressionChange;
+  Storage.SaveWorkspace(VarName.Text, Expression.Text);
+end;
+
 procedure TCalculator.VarNameChange(Sender: TObject);
 begin
-  WorkspaceController.SaveWorkspace(VarName.Text, Expression.Text);
+  Storage.SaveWorkspace(VarName.Text, Expression.Text);
 end;
 
-procedure TCalculator.FormMove(Sender: TObject; var NewLeft, NewTop: Integer);
+procedure TCalculator.FormChangeBounds(Sender: TObject);
 begin
-  WorkspaceController.SaveWindowPos(self);
-end;
-
-procedure TCalculator.FormResize(Sender: TObject);
-begin
-  WorkspaceController.SaveWindowPos(self);
+  Storage.SaveWindowPos(Point(Left, Top));
 end;
 
 procedure TCalculator.VarNameKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -231,12 +258,6 @@ begin
         SelectAllEditText(Expression);
         end;
     end;
-end;
-
-procedure TCalculator.ExpressionChange(Sender: TObject);
-begin
-  InputController.ExpressionChange;
-  WorkspaceController.SaveWorkspace(VarName.Text, Expression.Text);
 end;
 
 procedure TCalculator.HistoryKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);

@@ -8,96 +8,22 @@ unit GridUtils;
 interface
 
 uses
-  Classes, Grids, Config;
+  Classes, Grids;
 
 procedure StringGridMouseWheelDown(SenderGrid: TStringGrid; const Shift: TShiftState; const MousePos: TPoint; var Handled: Boolean);
 procedure StringGridMouseWheelUp(SenderGrid: TStringGrid; const Shift: TShiftState; const MousePos: TPoint; var Handled: Boolean);
 
 function GetClickedGridRowIndex(const Grid: TCustomGrid): Integer;
 
-procedure LoadStringGridFromCSV(Grid: TStringGrid; const Filename: String; const Delimiter: Char = ',');
-procedure SaveStringGridToCSV(const Grid: TStringGrid; const Filename: String; const Delimiter: Char = ',');
-
 function FindRowByCol0Value(const Grid: TStringGrid; const Col0Value: String; out aRow: Integer): Boolean;
 
-procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
-procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
+function GetClickedCellValue(const Source: TStringGrid; const MaxClickedCol: Integer): String;
+function GetKeyDownCellValue(const Source: TStringGrid; const MaxClickedCol: Integer): String;
 
 implementation
 
 uses
-  SysUtils, Windows, Controls, CsvDocument, DataDir;
-
-procedure LoadStringGridFromCSV(Grid: TStringGrid; const Filename: String; const Delimiter: Char);
-var
-  CSV:      TCSVDocument;
-  Row, Col: Integer;
-begin
-  // Clean up any stale temp file left by a previous crashed save
-  if FileExists(Filename + '.tmp') then
-    SysUtils.DeleteFile(Filename + '.tmp');
-
-  if not FileExists(Filename) then
-    begin
-    Exit;
-    end;
-
-  CSV           := TCSVDocument.Create;
-  CSV.Delimiter := Delimiter;
-    try
-      begin
-      CSV.LoadFromFile(Filename);
-
-      Grid.RowCount := Grid.FixedRows + CSV.RowCount;
-
-      for Row := 0 to CSV.RowCount - 1 do
-        begin
-        for Col := 0 to CSV.ColCount[Row] - 1 do
-          begin
-          Grid.Cells[Grid.FixedCols + Col, Grid.FixedRows + Row] := CSV.Cells[Col, Row];
-          end;
-        end;
-      end;
-    finally
-      begin
-      CSV.Free;
-      end;
-    end;
-end;
-
-procedure SaveStringGridToCSV(const Grid: TStringGrid; const Filename: String; const Delimiter: Char);
-var
-  CSV:      TCSVDocument;
-  TmpFile:  String;
-  Row, Col: Integer;
-begin
-  TmpFile       := Filename + '.tmp';
-  CSV           := TCSVDocument.Create;
-  CSV.Delimiter := Delimiter;
-    try
-      begin
-      for Row := 0 to Grid.RowCount - Grid.FixedRows - 1 do
-        begin
-        for Col := 0 to Grid.ColCount - Grid.FixedCols - 1 do
-          begin
-          CSV.Cells[Col, Row] := Grid.Cells[Grid.FixedCols + Col, Grid.FixedRows + Row];
-          end;
-        end;
-      CSV.SaveToFile(TmpFile);
-      end;
-    finally
-      begin
-      CSV.Free;
-      end;
-    end;
-
-  // Atomically replace the real file with the fully-written temp file
-  if not MoveFileEx(PChar(TmpFile), PChar(Filename), MOVEFILE_REPLACE_EXISTING) then
-    begin
-    SysUtils.DeleteFile(TmpFile);
-    raise Exception.CreateFmt('Could not save file "%s" (error %d)', [Filename, GetLastError]);
-    end;
-end;
+  SysUtils, Controls, Windows;
 
 function GetClickedGridRowIndex(const Grid: TCustomGrid): Integer;
 var
@@ -143,20 +69,35 @@ begin
   Result := False;
 end;
 
-procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
+function GetClickedCellValue(const Source: TStringGrid; const MaxClickedCol: Integer): String;
 var
-  PathFilename: String;
+  LocalPos, CellPos: TPoint;
+  ClickedCol:        Integer;
 begin
-  PathFilename := GetDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
-  LoadStringGridFromCSV(Grid, PathFilename);
+  LocalPos   := Source.ScreenToClient(Mouse.CursorPos);
+  CellPos    := Source.MouseToCell(LocalPos);
+  ClickedCol := CellPos.X - Source.FixedCols;
+
+  if (CellPos.Y >= Source.FixedRows) and (ClickedCol >= 0) and (ClickedCol <= MaxClickedCol) then
+    begin
+    Result := Source.Cells[CellPos.X, CellPos.Y];
+    end
+  else
+    begin
+    raise Exception.Create('Clicked out of range');
+    end;
 end;
 
-procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
-var
-  PathFilename: String;
+function GetKeyDownCellValue(const Source: TStringGrid; const MaxClickedCol: Integer): String;
 begin
-  PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
-  SaveStringGridToCSV(Grid, PathFilename);
+  if (Source.Col - Source.FixedCols <= MaxClickedCol) then
+    begin
+    Result := Source.Cells[Source.Col, Source.Row];
+    end
+  else
+    begin
+    raise Exception.Create('Key down on non-variable column');
+    end;
 end;
 
 end.

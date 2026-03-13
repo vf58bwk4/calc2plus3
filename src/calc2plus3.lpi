@@ -1,64 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <ProjectOptions>
-    <Version Value="12" />
-    <PathDelim Value="\" />
+    <Version Value="12"/>
+    <PathDelim Value="\"/>
     <General>
       <Flags>
-        <MainUnitHasUsesSectionForAllUnits Value="False" />
-        <MainUnitHasCreateFormStatements Value="False" />
-        <MainUnitHasTitleStatement Value="False" />
-        <MainUnitHasScaledStatement Value="False" />
+        <MainUnitHasUsesSectionForAllUnits Value="False"/>
+        <MainUnitHasCreateFormStatements Value="False"/>
+        <MainUnitHasTitleStatement Value="False"/>
+        <MainUnitHasScaledStatement Value="False"/>
       </Flags>
-      <SessionStorage Value="InProjectDir" />
-      <Scaled Value="True" />
-      <ResourceType Value="res" />
-      <UseXPManifest Value="True" />
+      <SessionStorage Value="InProjectDir"/>
+      <Scaled Value="True"/>
+      <ResourceType Value="res"/>
+      <UseXPManifest Value="True"/>
       <XPManifest>
-        <DpiAware Value="True/PM_V2" />
-        <LongPathAware Value="True" />
-        <AnsiUTF8 Value="True" />
+        <DpiAware Value="True/PM_V2"/>
+        <LongPathAware Value="True"/>
+        <AnsiUTF8 Value="True"/>
       </XPManifest>
-      <Icon Value="0" />
+      <Icon Value="0"/>
     </General>
     <BuildModes>
-      <Item Name="Release" Default="True" />
+      <Item Name="Release" Default="True"/>
       <Item Name="Debug">
         <CompilerOptions>
-          <Version Value="11" />
-          <PathDelim Value="\" />
+          <Version Value="11"/>
+          <PathDelim Value="\"/>
           <Target>
-            <Filename Value="..\build\calc2plus3" />
+            <Filename Value="..\build\calc2plus3"/>
           </Target>
           <SearchPaths>
-            <IncludeFiles Value="$(ProjOutDir)" />
-            <OtherUnitFiles Value="form;services;utils" />
-            <UnitOutputDirectory Value="..\lib\$(TargetCPU)-$(TargetOS)" />
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <OtherUnitFiles Value="form;services;utils"/>
+            <UnitOutputDirectory Value="..\lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
             <SyntaxOptions>
-              <CStyleOperator Value="False" />
-              <AllowLabel Value="False" />
+              <CStyleOperator Value="False"/>
+              <AllowLabel Value="False"/>
             </SyntaxOptions>
           </Parsing>
           <CodeGeneration>
-            <SmartLinkUnit Value="True" />
-            <TargetCPU Value="i386" />
-            <TargetOS Value="win32" />
+            <SmartLinkUnit Value="True"/>
+            <TargetCPU Value="i386"/>
+            <TargetOS Value="win32"/>
             <Optimizations>
-              <OptimizationLevel Value="2" />
+              <OptimizationLevel Value="2"/>
             </Optimizations>
-            <SmallerCode Value="True" />
+            <SmallerCode Value="True"/>
           </CodeGeneration>
           <Linking>
             <Debugging>
-              <GenerateDebugInfo Value="False" />
-              <RunWithoutDebug Value="True" />
-              <DebugInfoType Value="dsDwarf3" />
+              <GenerateDebugInfo Value="False"/>
+              <RunWithoutDebug Value="True"/>
+              <DebugInfoType Value="dsDwarf3"/>
             </Debugging>
             <Options>
               <Win32>
-                <GraphicApplication Value="True" />
+                <GraphicApplication Value="True"/>
               </Win32>
             </Options>
           </Linking>
@@ -66,133 +66,133 @@
       </Item>
     </BuildModes>
     <PublishOptions>
-      <Version Value="2" />
-      <UseFileFilters Value="True" />
+      <Version Value="2"/>
+      <UseFileFilters Value="True"/>
     </PublishOptions>
     <RunParams>
-      <FormatVersion Value="2" />
+      <FormatVersion Value="2"/>
     </RunParams>
     <RequiredPackages>
       <Item>
-        <PackageName Value="LCL" />
+        <PackageName Value="LCL"/>
       </Item>
     </RequiredPackages>
     <Units>
       <Unit>
-        <Filename Value="calc2plus3.lpr" />
-        <IsPartOfProject Value="True" />
-        <UnitName Value="Calc2plus3" />
+        <Filename Value="calc2plus3.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Calc2plus3"/>
       </Unit>
       <Unit>
-        <Filename Value="form\mainform.pas" />
-        <IsPartOfProject Value="True" />
-        <ComponentName Value="Calculator" />
-        <HasResources Value="True" />
-        <ResourceBaseClass Value="Form" />
-        <UnitName Value="MainForm" />
+        <Filename Value="form\mainform.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Calculator"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="MainForm"/>
       </Unit>
       <Unit>
-        <Filename Value="services\inputcontroller.pas" />
-        <IsPartOfProject Value="True" />
-        <UnitName Value="InputController" />
+        <Filename Value="services\inputcontroller.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="InputController"/>
       </Unit>
       <Unit>
-        <Filename Value="services\displayservice.pas" />
-        <IsPartOfProject Value="True" />
-        <UnitName Value="DisplayService" />
+        <Filename Value="services\displayservice.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="DisplayService"/>
       </Unit>
       <Unit>
-        <Filename Value="services\historyservice.pas" />
-        <IsPartOfProject Value="True" />
-        <UnitName Value="HistoryService" />
+        <Filename Value="services\historyservice.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="HistoryService"/>
       </Unit>
       <Unit>
-        <Filename Value="services\variableservice.pas" />
-        <IsPartOfProject Value="True" />
-        <UnitName Value="VariableService" />
+        <Filename Value="services\variableservice.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="VariableService"/>
       </Unit>
       <Unit>
-        <Filename Value="services\workspacecontroller.pas" />
-        <IsPartOfProject Value="True" />
-        <UnitName Value="WorkspaceController" />
+        <Filename Value="services\exprservice.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ExprService"/>
       </Unit>
       <Unit>
-        <Filename Value="services\exprservice.pas" />
-        <IsPartOfProject Value="True" />
-        <UnitName Value="ExprService" />
+        <Filename Value="utils\appwidelock.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="AppWideLock"/>
       </Unit>
       <Unit>
-        <Filename Value="utils\appwidelock.pas" />
-        <IsPartOfProject Value="True" />
-        <UnitName Value="AppWideLock" />
+        <Filename Value="utils\formutils.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="FormUtils"/>
       </Unit>
       <Unit>
-        <Filename Value="utils\formutils.pas" />
-        <IsPartOfProject Value="True" />
-        <UnitName Value="FormUtils" />
+        <Filename Value="utils\gridutils.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="GridUtils"/>
       </Unit>
       <Unit>
-        <Filename Value="utils\gridutils.pas" />
-        <IsPartOfProject Value="True" />
-        <UnitName Value="GridUtils" />
+        <Filename Value="config.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Config"/>
       </Unit>
       <Unit>
-        <Filename Value="utils\datadir.pas" />
-        <IsPartOfProject Value="True" />
-        <UnitName Value="DataDir" />
+        <Filename Value="utils\autorun.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Autorun"/>
       </Unit>
       <Unit>
-        <Filename Value="config.pas" />
-        <IsPartOfProject Value="True" />
-        <UnitName Value="Config" />
+        <Filename Value="utils\debuglog.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="DebugLog"/>
       </Unit>
       <Unit>
-        <Filename Value="utils\autorun.pas" />
-        <IsPartOfProject Value="True" />
-        <UnitName Value="Autorun" />
+        <Filename Value="utils\storage.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Storage"/>
       </Unit>
       <Unit>
-        <Filename Value="utils\debuglog.pas" />
-        <IsPartOfProject Value="True" />
-        <UnitName Value="DebugLog" />
+        <Filename Value="services\undoredoservice.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UndoRedoService"/>
       </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
-    <Version Value="11" />
-    <PathDelim Value="\" />
+    <Version Value="11"/>
+    <PathDelim Value="\"/>
     <Target>
-      <Filename Value="..\build\calc2plus3" />
+      <Filename Value="..\build\calc2plus3"/>
     </Target>
     <SearchPaths>
-      <IncludeFiles Value="$(ProjOutDir)" />
-      <OtherUnitFiles Value="form;services;utils" />
-      <UnitOutputDirectory Value="..\lib\$(TargetCPU)-$(TargetOS)" />
+      <IncludeFiles Value="$(ProjOutDir)"/>
+      <OtherUnitFiles Value="form;services;utils"/>
+      <UnitOutputDirectory Value="..\lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>
       <SyntaxOptions>
-        <CStyleOperator Value="False" />
-        <AllowLabel Value="False" />
+        <CStyleOperator Value="False"/>
+        <AllowLabel Value="False"/>
       </SyntaxOptions>
     </Parsing>
     <CodeGeneration>
-      <SmartLinkUnit Value="True" />
-      <TargetCPU Value="x86_64" />
-      <TargetOS Value="win64" />
+      <SmartLinkUnit Value="True"/>
+      <TargetCPU Value="x86_64"/>
+      <TargetOS Value="win64"/>
       <Optimizations>
-        <OptimizationLevel Value="2" />
+        <OptimizationLevel Value="2"/>
       </Optimizations>
-      <SmallerCode Value="True" />
+      <SmallerCode Value="True"/>
     </CodeGeneration>
     <Linking>
       <Debugging>
-        <GenerateDebugInfo Value="False" />
-        <RunWithoutDebug Value="True" />
-        <DebugInfoType Value="dsDwarf3" />
+        <GenerateDebugInfo Value="False"/>
+        <RunWithoutDebug Value="True"/>
+        <DebugInfoType Value="dsDwarf3"/>
       </Debugging>
       <Options>
         <Win32>
-          <GraphicApplication Value="True" />
+          <GraphicApplication Value="True"/>
         </Win32>
       </Options>
     </Linking>
@@ -200,16 +200,16 @@
   <Debugging>
     <Exceptions>
       <Item>
-        <Name Value="EAbort" />
+        <Name Value="EAbort"/>
       </Item>
       <Item>
-        <Name Value="ECodetoolError" />
+        <Name Value="ECodetoolError"/>
       </Item>
       <Item>
-        <Name Value="EFOpenError" />
+        <Name Value="EFOpenError"/>
       </Item>
       <Item>
-        <Name Value="EExprParser" />
+        <Name Value="EExprParser"/>
       </Item>
     </Exceptions>
   </Debugging>

@@ -18,7 +18,7 @@ function  Grid: TStringGrid;
 implementation
 
 uses
-  SysUtils, Config, ExprService, GridUtils, DisplayService;
+  SysUtils, Config, ExprService, Storage, GridUtils, DisplayService;
 
 var
   _VarList: TStringGrid;
@@ -46,13 +46,14 @@ begin
   VarFound := FindRowByCol0Value(_VarList, VarName, DeleteRowIdx);
 
   ExprService.UpsertVariable(VarName, NewValue);
-  SaveGridToDataFile(_VarList, VARS_FILE);
 
   if VarFound then
     begin
     _VarList.DeleteRow(DeleteRowIdx);
     end;
   _VarList.InsertRowWithValues(_VarList.FixedRows, [VarName, DisplayService.FormatNumber(NewValue)]);
+
+  SaveGridToDataFile(_VarList, VARS_FILE);
 end;
 
 procedure RemoveItem;

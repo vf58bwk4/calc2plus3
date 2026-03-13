@@ -8,7 +8,7 @@ unit FormUtils;
 interface
 
 uses
-  Classes, StdCtrls, Forms;
+  Classes, Types, StdCtrls, Forms;
 
 type
   TVK_KeyCode    = 0..254;
@@ -30,10 +30,12 @@ procedure SelectAllEditText(Edit: TEdit);
 
 procedure DoCtrlBackspace(Edit: TEdit);
 
+function AdjustWindowPos(const Pos: TPoint; const W, H: Integer): TPoint;
+
 implementation
 
 uses
-  Windows, Messages, SysUtils, DebugLog;
+  Windows, Messages, SysUtils, Math, DebugLog;
 
 const
   EM_GETSCROLLPOS = $04DD;
@@ -236,6 +238,25 @@ begin
         end;
       end;
     end;
+end;
+
+function AdjustWindowPos(const Pos: TPoint; const W, H: Integer): TPoint;
+var
+  Monitor:  TMonitor;
+  WorkArea: TRect;
+  Center:   TPoint;
+begin
+  Result := Pos;
+
+  // Find the monitor whose work area is nearest to the window centre
+  Center.X := Pos.X + W div 2;
+  Center.Y := Pos.Y + H div 2;
+  Monitor  := Screen.MonitorFromPoint(Center);
+  WorkArea := Monitor.WorkareaRect;
+
+  // Clamp position so the whole window fits within the work area
+  Result.X := EnsureRange(Pos.X, WorkArea.Left, Max(WorkArea.Left, WorkArea.Right  - W));
+  Result.Y := EnsureRange(Pos.Y, WorkArea.Top,  Max(WorkArea.Top,  WorkArea.Bottom - H));
 end;
 
 end.

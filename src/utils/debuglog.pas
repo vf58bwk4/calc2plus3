@@ -12,7 +12,7 @@ procedure DebugLog(const Msg: String);
 implementation
 
 uses
-  SysUtils, DataDir;
+  SysUtils, Storage;
 
 procedure DebugLog(const Msg: String);
 var

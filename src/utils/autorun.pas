@@ -6,6 +6,7 @@ unit Autorun;
 interface
 
 procedure RegisterAutoRun(const AppName, AppPath: String);
+procedure UnregisterAutoRun(const AppName: String);
 
 implementation
 
@@ -26,6 +27,25 @@ begin
       if Reg.OpenKey(AutoRunRegPath, True) then
         begin
         Reg.WriteString(AppName, AppPath);
+        Reg.CloseKey;
+        end;
+      end;
+    finally
+    Reg.Free;
+    end;
+end;
+
+procedure UnregisterAutoRun(const AppName: String);
+var
+  Reg: TRegistry;
+begin
+  Reg := TRegistry.Create;
+    try
+      begin
+      Reg.RootKey := HKEY_CURRENT_USER;
+      if Reg.OpenKey(AutoRunRegPath, False) then
+        begin
+        Reg.DeleteValue(AppName);
         Reg.CloseKey;
         end;
       end;

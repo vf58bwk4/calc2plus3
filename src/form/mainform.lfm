@@ -8,12 +8,11 @@ object Calculator: TCalculator
   ClientHeight = 629
   ClientWidth = 471
   DesignTimePPI = 120
-  LCLVersion = '4.0.0.4'
+  LCLVersion = '4.6.0.0'
+  OnChangeBounds = FormChangeBounds
   OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
-  OnMove = FormMove
-  OnResize = FormResize
   OnShow = FormShow
   object Expression: TEdit
     Left = 96
@@ -30,7 +29,6 @@ object Calculator: TCalculator
     ParentBidiMode = False
     ParentFont = False
     TabOrder = 1
-    OnChange = ExpressionChange
     OnKeyDown = ExpressionKeyDown
   end
   object VarName: TEdit
@@ -48,7 +46,6 @@ object Calculator: TCalculator
     ParentFont = False
     TabOrder = 0
     Text = 'XYZ'
-    OnChange = VarNameChange
     OnKeyDown = VarNameKeyDown
   end
   object StatusBar: TStatusBar

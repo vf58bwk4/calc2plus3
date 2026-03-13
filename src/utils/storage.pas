@@ -17,8 +17,8 @@ type
 
 function ForceDataDir(const Dir: String): String;
 
-procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
 procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
+procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
 
 procedure SaveWorkspace(const VarName, Expression: String);
 function LoadWorkspace: TWorkspaceState;
@@ -31,6 +31,9 @@ implementation
 uses
   SysUtils, Windows, ShlObj, CsvDocument;
 
+const
+  CSV_DELIMITER = '|';
+
 function GetDataDir(const Dir: String): String;
 var
   Path:    array[0..MAX_PATH] of Char;
@@ -38,7 +41,7 @@ var
 begin
   if SHGetFolderPath(0, CSIDL_APPDATA, 0, 0, Path) <> S_OK then
     begin
-    raise Exception.Create('Could not get AppData\Roaming folder');
+    raise Exception.CreateFmt('Could not get AppData\Roaming folder (error %d)', [GetLastError]);
     end;
 
   BaseDir := IncludeTrailingPathDelimiter(Path);
@@ -60,46 +63,6 @@ begin
   Result := DataDir;
 end;
 
-procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
-var
-  PathFilename: String;
-  CSV:          TCSVDocument;
-  Row, Col:     Integer;
-begin
-  PathFilename := GetDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
-
-  // Clean up any stale temp file left by a previous crashed save
-  if FileExists(PathFilename + '.tmp') then
-    SysUtils.DeleteFile(PathFilename + '.tmp');
-
-  if not FileExists(PathFilename) then
-    begin
-    Exit;
-    end;
-
-  CSV           := TCSVDocument.Create;
-  CSV.Delimiter := ',';
-    try
-      begin
-      CSV.LoadFromFile(PathFilename);
-
-      Grid.RowCount := Grid.FixedRows + CSV.RowCount;
-
-      for Row := 0 to CSV.RowCount - 1 do
-        begin
-        for Col := 0 to CSV.ColCount[Row] - 1 do
-          begin
-          Grid.Cells[Grid.FixedCols + Col, Grid.FixedRows + Row] := CSV.Cells[Col, Row];
-          end;
-        end;
-      end;
-    finally
-      begin
-      CSV.Free;
-      end;
-    end;
-end;
-
 procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
 var
   PathFilename: String;
@@ -107,13 +70,12 @@ var
   CSV:          TCSVDocument;
   Row, Col:     Integer;
 begin
-  try
-    begin
-    PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
-    TmpFile      := PathFilename + '.tmp';
+  PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
+  TmpFile      := PathFilename + '.tmp';
 
-    CSV           := TCSVDocument.Create;
-    CSV.Delimiter := ',';
+  CSV           := TCSVDocument.Create;
+  CSV.Delimiter := CSV_DELIMITER;
+    try
       try
         begin
         for Row := 0 to Grid.RowCount - Grid.FixedRows - 1 do
@@ -130,53 +92,98 @@ begin
         CSV.Free;
         end;
       end;
-
-    if not MoveFileEx(PChar(TmpFile), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
+    except
       begin
-      SysUtils.DeleteFile(TmpFile);
-      raise Exception.CreateFmt('Could not save file "%s" (error %d)', [PathFilename, GetLastError]);
+      raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
       end;
     end;
-  except
-  on E: Exception do
-    raise;
-  end;
+
+  if not MoveFileEx(PChar(TmpFile), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
+    begin
+    SysUtils.DeleteFile(TmpFile);
+    raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+    end;
+end;
+
+procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
+var
+  PathFilename: String;
+  CSV:          TCSVDocument;
+  Row, Col:     Integer;
+begin
+  PathFilename := GetDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
+
+  // Clean up any stale temp file left by a previous crashed save
+  SysUtils.DeleteFile(PathFilename + '.tmp');
+
+  if FileExists(PathFilename) then
+    begin
+    CSV           := TCSVDocument.Create;
+    CSV.Delimiter := CSV_DELIMITER;
+      try
+        try
+          begin
+          CSV.LoadFromFile(PathFilename);
+          Grid.RowCount := Grid.FixedRows + CSV.RowCount;
+          for Row := 0 to CSV.RowCount - 1 do
+            begin
+            for Col := 0 to CSV.ColCount[Row] - 1 do
+              begin
+              Grid.Cells[Grid.FixedCols + Col, Grid.FixedRows + Row] := CSV.Cells[Col, Row];
+              end;
+            end;
+          end;
+        finally
+          begin
+          CSV.Free;
+          end;
+        end;
+      except
+        begin
+        raise Exception.CreateFmt('Could not load file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+        end;
+      end;
+    end;
 end;
 
 const
   CSV_COL: record
-    Key:   Byte;
-    Value: Byte;
-  end = (Key: 0; Value: 1);
+      Key:   Byte;
+      Value: Byte;
+      end
+  = (Key: 0; Value: 1);
 
   WORKSPACE_ROWS: record
-    VarName:    Byte;
-    Expression: Byte;
-  end = (VarName: 0; Expression: 1);
+      VarName:    Byte;
+      Expression: Byte;
+      end
+  = (VarName: 0; Expression: 1);
 
   WINPOS_ROWS: record
-    Left: Byte;
-    Top:  Byte;
-  end = (Left: 0; Top: 1);
+      Left: Byte;
+      Top:  Byte;
+      end
+  = (Left: 0; Top: 1);
 
 procedure SaveWorkspace(const VarName, Expression: String);
 var
+  DataFile:     TDataFile;
   CSV:          TCSVDocument;
   PathFilename: String;
   TmpFilename:  String;
 begin
-  try
-    begin
-    PathFilename := ForceDataDir(WORKSPACE_FILE.Dirname) + '\' + WORKSPACE_FILE.Filename;
-    TmpFilename  := PathFilename + '.tmp';
+  DataFile     := WORKSPACE_FILE;
+  PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
+  TmpFilename  := PathFilename + '.tmp';
 
-    CSV           := TCSVDocument.Create;
-    CSV.Delimiter := ',';
+  CSV           := TCSVDocument.Create;
+  CSV.Delimiter := CSV_DELIMITER;
+    try
       try
         begin
-        CSV.Cells[CSV_COL.Key,   WORKSPACE_ROWS.VarName]    := 'varname';
+        CSV.Cells[CSV_COL.Key, WORKSPACE_ROWS.VarName]      := 'varname';
         CSV.Cells[CSV_COL.Value, WORKSPACE_ROWS.VarName]    := VarName;
-        CSV.Cells[CSV_COL.Key,   WORKSPACE_ROWS.Expression] := 'expression';
+        CSV.Cells[CSV_COL.Key, WORKSPACE_ROWS.Expression]   := 'expression';
         CSV.Cells[CSV_COL.Value, WORKSPACE_ROWS.Expression] := Expression;
         CSV.SaveToFile(TmpFilename);
         end;
@@ -185,77 +192,84 @@ begin
         CSV.Free;
         end;
       end;
-
-    if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
+    except
       begin
-      SysUtils.DeleteFile(TmpFilename);
-      raise Exception.CreateFmt('Could not save workspace file "%s" (error %d)', [PathFilename, GetLastError]);
+      raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
       end;
     end;
-  except
-  on E: Exception do
-    raise;
-  end;
+
+  if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
+    begin
+    SysUtils.DeleteFile(TmpFilename);
+    raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+    end;
 end;
 
 function LoadWorkspace: TWorkspaceState;
 var
+  DataFile:     TDataFile;
   PathFilename: String;
   CSV:          TCSVDocument;
 begin
+  DataFile          := WORKSPACE_FILE;
   Result.VarName    := '';
   Result.Expression := '';
 
-    try
-      begin
-      PathFilename := GetDataDir(WORKSPACE_FILE.Dirname) + '\' + WORKSPACE_FILE.Filename;
+  PathFilename := GetDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
 
-      // Clean up any stale temp file from a previous crashed save
-      if SysUtils.FileExists(PathFilename + '.tmp') then
-        SysUtils.DeleteFile(PathFilename + '.tmp');
+  // Clean up any stale temp file from a previous crashed save
+  SysUtils.DeleteFile(PathFilename + '.tmp');
 
-      if SysUtils.FileExists(PathFilename) then
-        begin
-        CSV           := TCSVDocument.Create;
-        CSV.Delimiter := ',';
-          try
+  if SysUtils.FileExists(PathFilename) then
+    begin
+    CSV           := TCSVDocument.Create;
+    CSV.Delimiter := CSV_DELIMITER;
+      try
+        try
+          begin
+          CSV.LoadFromFile(PathFilename);
+          if CSV.RowCount > WORKSPACE_ROWS.VarName then
             begin
-            CSV.LoadFromFile(PathFilename);
-            if CSV.RowCount > WORKSPACE_ROWS.VarName then
-              Result.VarName := CSV.Cells[CSV_COL.Value, WORKSPACE_ROWS.VarName];
-            if CSV.RowCount > WORKSPACE_ROWS.Expression then
-              Result.Expression := CSV.Cells[CSV_COL.Value, WORKSPACE_ROWS.Expression];
+            Result.VarName := CSV.Cells[CSV_COL.Value, WORKSPACE_ROWS.VarName];
             end;
-          finally
+          if CSV.RowCount > WORKSPACE_ROWS.Expression then
             begin
-            CSV.Free;
+            Result.Expression := CSV.Cells[CSV_COL.Value, WORKSPACE_ROWS.Expression];
             end;
           end;
+        finally
+          begin
+          CSV.Free;
+          end;
+        end;
+      except
+        begin
+        raise Exception.CreateFmt('Could not load file "%s" (error %d)', [DataFile.Filename, GetLastError]);
         end;
       end;
-    except
-      // Load is best-effort; return empty defaults on any error
     end;
 end;
 
 procedure SaveWindowPos(const Pos: TPoint);
 var
+  DataFile:     TDataFile;
   CSV:          TCSVDocument;
   PathFilename: String;
   TmpFilename:  String;
 begin
-  try
-    begin
-    PathFilename := ForceDataDir(WINPOS_FILE.Dirname) + '\' + WINPOS_FILE.Filename;
-    TmpFilename  := PathFilename + '.tmp';
+  DataFile := WINPOS_FILE;
 
-    CSV           := TCSVDocument.Create;
-    CSV.Delimiter := ',';
+  PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
+  TmpFilename  := PathFilename + '.tmp';
+
+  CSV           := TCSVDocument.Create;
+  CSV.Delimiter := CSV_DELIMITER;
+    try
       try
         begin
-        CSV.Cells[CSV_COL.Key,   WINPOS_ROWS.Left] := 'left';
+        CSV.Cells[CSV_COL.Key, WINPOS_ROWS.Left]   := 'left';
         CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Left] := IntToStr(Pos.X);
-        CSV.Cells[CSV_COL.Key,   WINPOS_ROWS.Top]  := 'top';
+        CSV.Cells[CSV_COL.Key, WINPOS_ROWS.Top]    := 'top';
         CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Top]  := IntToStr(Pos.Y);
         CSV.SaveToFile(TmpFilename);
         end;
@@ -264,54 +278,61 @@ begin
         CSV.Free;
         end;
       end;
-
-    if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
+    except
       begin
-      SysUtils.DeleteFile(TmpFilename);
-      raise Exception.CreateFmt('Could not save window position file "%s" (error %d)', [PathFilename, GetLastError]);
+      raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
       end;
     end;
-  except
-  on E: Exception do
-    raise;
-  end;
+
+  if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
+    begin
+    SysUtils.DeleteFile(TmpFilename);
+    raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+    end;
 end;
 
 function LoadWindowPos: TPoint;
 var
+  DataFile:     TDataFile;
   PathFilename: String;
   CSV:          TCSVDocument;
 begin
+  DataFile := WINPOS_FILE;
   Result.X := 0;
   Result.Y := 0;
 
-    try
-      begin
-      PathFilename := GetDataDir(WINPOS_FILE.Dirname) + '\' + WINPOS_FILE.Filename;
+  PathFilename := GetDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
 
-      // Clean up any stale temp file from a previous crashed save
-      if SysUtils.FileExists(PathFilename + '.tmp') then
-        SysUtils.DeleteFile(PathFilename + '.tmp');
+  // Clean up any stale temp file from a previous crashed save
+  SysUtils.DeleteFile(PathFilename + '.tmp');
 
-      if SysUtils.FileExists(PathFilename) then
-        begin
-        CSV           := TCSVDocument.Create;
-        CSV.Delimiter := ',';
-          try
+  if SysUtils.FileExists(PathFilename) then
+    begin
+    CSV           := TCSVDocument.Create;
+    CSV.Delimiter := CSV_DELIMITER;
+      try
+        try
+          begin
+          CSV.LoadFromFile(PathFilename);
+          if CSV.RowCount > WINPOS_ROWS.Left then
             begin
-            CSV.LoadFromFile(PathFilename);
-            if CSV.RowCount > WINPOS_ROWS.Left then Result.X := StrToIntDef(CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Left], 0);
-            if CSV.RowCount > WINPOS_ROWS.Top  then Result.Y := StrToIntDef(CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Top],  0);
+            Result.X := StrToIntDef(CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Left], 0);
             end;
-          finally
+          if CSV.RowCount > WINPOS_ROWS.Top then
             begin
-            CSV.Free;
+            Result.Y := StrToIntDef(CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Top], 0);
             end;
           end;
+        finally
+          begin
+          CSV.Free;
+          end;
+        end;
+      except
+        begin
+        raise Exception.CreateFmt('Could not load file "%s" (error %d)', [DataFile.Filename, GetLastError]);
         end;
       end;
-    except
-      // Load is best-effort; return zeroed defaults on any error
     end;
 end;
 

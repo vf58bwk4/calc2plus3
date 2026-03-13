@@ -17,23 +17,12 @@ uses
   SysUtils, RegExpr, FPExprPars;
 
 var
-  Parser: TFPExpressionParser;
+  Parser:      TFPExpressionParser;
+  VarNameExpr: TRegExpr;
 
 function IsValidVariableName(const S: String): Boolean;
-var
-  RE: TRegExpr;
 begin
-  RE := TRegExpr.Create;
-    try
-      begin
-      RE.Expression := '^[A-Za-z_][A-Za-z0-9_]*$';
-      Result        := RE.Exec(S);
-      end;
-    finally
-      begin
-      RE.Free;
-      end;
-    end;
+  Result := VarNameExpr.Exec(S);
 end;
 
 procedure RemoveVariable(const Name: String);
@@ -97,7 +86,11 @@ initialization
   Parser          := TFPExpressionParser.Create(nil);
   Parser.Builtins := [bcMath];
 
+  VarNameExpr            := TRegExpr.Create;
+  VarNameExpr.Expression := '^[A-Za-z_][A-Za-z0-9_]*$';
+
 finalization
+  FreeAndNil(VarNameExpr);
   FreeAndNil(Parser);
 
 end.

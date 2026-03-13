@@ -17,7 +17,7 @@ function  Grid: TStringGrid;
 implementation
 
 uses
-  SysUtils, Config, GridUtils, DisplayService;
+  SysUtils, Config, Storage, GridUtils, DisplayService;
 
 var
   _History: TStringGrid;
