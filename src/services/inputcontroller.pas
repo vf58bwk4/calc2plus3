@@ -278,15 +278,6 @@ begin
     end;
 end;
 
-procedure Initialize(const F: TCalculator);
-begin
-  with F do
-    begin
-    _VarName    := VarName;
-    _Expression := Expression;
-    end;
-end;
-
 procedure ExpressionChange;
 begin
   UndoRedoService.RecordExpressionChange(_Expression.Text, _Expression.SelStart);
@@ -316,6 +307,15 @@ begin
     _Expression.SelStart := Next.SelStart;
     end;
   UndoRedoService.AfterMutatingState;
+end;
+
+procedure Initialize(const F: TCalculator);
+begin
+  with F do
+    begin
+    _VarName    := VarName;
+    _Expression := Expression;
+    end;
 end;
 
 end.

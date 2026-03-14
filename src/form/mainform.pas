@@ -99,12 +99,15 @@ begin
   VarName.OnChange    := @VarNameChange;
   Expression.OnChange := @ExpressionChange;
 
+  Storage.InitializeWindowPosDebouncing;
+
   DisplayService.StatusOK;
 end;
 
 procedure TCalculator.FormDestroy(Sender: TObject);
 begin
   Windows.UnregisterHotKey(Handle, HOTKEY_ID);
+  Storage.FinalizeWindowPosDebouncing;
 end;
 
 procedure TCalculator.FormShow(Sender: TObject);

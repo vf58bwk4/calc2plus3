@@ -7,7 +7,7 @@ unit Storage;
 interface
 
 uses
-  Types, Grids, Config;
+  Types, Grids, Config, Classes, ExtCtrls;
 
 type
   TWorkspaceState = record
@@ -23,8 +23,13 @@ procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
 procedure SaveWorkspace(const VarName, Expression: String);
 function LoadWorkspace: TWorkspaceState;
 
+procedure SaveWorkspaceDebounced(const VarName, Expression: String);
+
 procedure SaveWindowPos(const Pos: TPoint);
 function LoadWindowPos: TPoint;
+
+procedure InitializeWindowPosDebouncing;
+procedure FinalizeWindowPosDebouncing;
 
 implementation
 
@@ -33,6 +38,47 @@ uses
 
 const
   CSV_DELIMITER = '|';
+  DEBOUNCE_INTERVAL = 1000; // milliseconds
+
+type
+  TDebounceHelper = class
+    procedure OnTimer(Sender: TObject);
+  end;
+
+var
+  _DebounceTimer: TTimer;
+  _DebounceHelper: TDebounceHelper;
+  _PendingWindowPos: TPoint;
+  _LastSavedWindowPos: TPoint;
+  _PendingWorkspace: TWorkspaceState;
+  _LastSavedWorkspace: TWorkspaceState;
+  _WorkspaceDirty: Boolean;
+
+procedure _WriteWindowPos(const Pos: TPoint); forward;
+procedure _WriteWorkspace(const VarName, Expression: String); forward;
+
+procedure TDebounceHelper.OnTimer(Sender: TObject);
+begin
+  _DebounceTimer.Enabled := False;
+
+  if (_PendingWindowPos.X <> _LastSavedWindowPos.X) or
+     (_PendingWindowPos.Y <> _LastSavedWindowPos.Y) then
+    begin
+    _WriteWindowPos(_PendingWindowPos);
+    _LastSavedWindowPos := _PendingWindowPos;
+    end;
+
+  if _WorkspaceDirty then
+    begin
+    if (_PendingWorkspace.VarName <> _LastSavedWorkspace.VarName) or
+       (_PendingWorkspace.Expression <> _LastSavedWorkspace.Expression) then
+      begin
+      _WriteWorkspace(_PendingWorkspace.VarName, _PendingWorkspace.Expression);
+      _LastSavedWorkspace := _PendingWorkspace;
+      end;
+    _WorkspaceDirty := False;
+    end;
+end;
 
 function GetDataDir(const Dir: String): String;
 var
@@ -166,43 +212,18 @@ const
   = (Left: 0; Top: 1);
 
 procedure SaveWorkspace(const VarName, Expression: String);
-var
-  DataFile:     TDataFile;
-  CSV:          TCSVDocument;
-  PathFilename: String;
-  TmpFilename:  String;
 begin
-  DataFile     := WORKSPACE_FILE;
-  PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
-  TmpFilename  := PathFilename + '.tmp';
+  SaveWorkspaceDebounced(VarName, Expression);
+end;
 
-  CSV           := TCSVDocument.Create;
-  CSV.Delimiter := CSV_DELIMITER;
-    try
-      try
-        begin
-        CSV.Cells[CSV_COL.Key, WORKSPACE_ROWS.VarName]      := 'varname';
-        CSV.Cells[CSV_COL.Value, WORKSPACE_ROWS.VarName]    := VarName;
-        CSV.Cells[CSV_COL.Key, WORKSPACE_ROWS.Expression]   := 'expression';
-        CSV.Cells[CSV_COL.Value, WORKSPACE_ROWS.Expression] := Expression;
-        CSV.SaveToFile(TmpFilename);
-        end;
-      finally
-        begin
-        CSV.Free;
-        end;
-      end;
-    except
-      begin
-      raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
-      end;
-    end;
+procedure SaveWorkspaceDebounced(const VarName, Expression: String);
+begin
+  _PendingWorkspace.VarName := VarName;
+  _PendingWorkspace.Expression := Expression;
+  _WorkspaceDirty := True;
 
-  if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
-    begin
-    SysUtils.DeleteFile(TmpFilename);
-    raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
-    end;
+  if not _DebounceTimer.Enabled then
+    _DebounceTimer.Enabled := True;
 end;
 
 function LoadWorkspace: TWorkspaceState;
@@ -251,43 +272,12 @@ begin
 end;
 
 procedure SaveWindowPos(const Pos: TPoint);
-var
-  DataFile:     TDataFile;
-  CSV:          TCSVDocument;
-  PathFilename: String;
-  TmpFilename:  String;
 begin
-  DataFile := WINPOS_FILE;
-
-  PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
-  TmpFilename  := PathFilename + '.tmp';
-
-  CSV           := TCSVDocument.Create;
-  CSV.Delimiter := CSV_DELIMITER;
-    try
-      try
-        begin
-        CSV.Cells[CSV_COL.Key, WINPOS_ROWS.Left]   := 'left';
-        CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Left] := IntToStr(Pos.X);
-        CSV.Cells[CSV_COL.Key, WINPOS_ROWS.Top]    := 'top';
-        CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Top]  := IntToStr(Pos.Y);
-        CSV.SaveToFile(TmpFilename);
-        end;
-      finally
-        begin
-        CSV.Free;
-        end;
-      end;
-    except
-      begin
-      raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
-      end;
-    end;
-
-  if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
+  if (Pos.X <> _PendingWindowPos.X) or (Pos.Y <> _PendingWindowPos.Y) then
     begin
-    SysUtils.DeleteFile(TmpFilename);
-    raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+    _PendingWindowPos := Pos;
+    if not _DebounceTimer.Enabled then
+      _DebounceTimer.Enabled := True;
     end;
 end;
 
@@ -334,6 +324,138 @@ begin
         end;
       end;
     end;
+end;
+
+procedure _WriteWindowPos(const Pos: TPoint);
+var
+  DataFile:     TDataFile;
+  CSV:          TCSVDocument;
+  PathFilename: String;
+  TmpFilename:  String;
+begin
+  DataFile := WINPOS_FILE;
+
+  PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
+  TmpFilename  := PathFilename + '.tmp';
+
+  CSV           := TCSVDocument.Create;
+  CSV.Delimiter := CSV_DELIMITER;
+    try
+      try
+        begin
+        CSV.Cells[CSV_COL.Key, WINPOS_ROWS.Left]   := 'left';
+        CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Left] := IntToStr(Pos.X);
+        CSV.Cells[CSV_COL.Key, WINPOS_ROWS.Top]    := 'top';
+        CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Top]  := IntToStr(Pos.Y);
+        CSV.SaveToFile(TmpFilename);
+        end;
+      finally
+        begin
+        CSV.Free;
+        end;
+      end;
+    except
+      begin
+      raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+      end;
+    end;
+
+  if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
+    begin
+    SysUtils.DeleteFile(TmpFilename);
+    raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+    end;
+end;
+
+procedure _WriteWorkspace(const VarName, Expression: String);
+var
+  DataFile:     TDataFile;
+  CSV:          TCSVDocument;
+  PathFilename: String;
+  TmpFilename:  String;
+begin
+  DataFile     := WORKSPACE_FILE;
+  PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
+  TmpFilename  := PathFilename + '.tmp';
+
+  CSV           := TCSVDocument.Create;
+  CSV.Delimiter := CSV_DELIMITER;
+    try
+      try
+        begin
+        CSV.Cells[CSV_COL.Key, WORKSPACE_ROWS.VarName]      := 'varname';
+        CSV.Cells[CSV_COL.Value, WORKSPACE_ROWS.VarName]    := VarName;
+        CSV.Cells[CSV_COL.Key, WORKSPACE_ROWS.Expression]   := 'expression';
+        CSV.Cells[CSV_COL.Value, WORKSPACE_ROWS.Expression] := Expression;
+        CSV.SaveToFile(TmpFilename);
+        end;
+      finally
+        begin
+        CSV.Free;
+        end;
+      end;
+    except
+      begin
+      raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+      end;
+    end;
+
+  if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
+    begin
+    SysUtils.DeleteFile(TmpFilename);
+    raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+    end;
+end;
+
+procedure InitializeWindowPosDebouncing;
+var
+  Workspace: TWorkspaceState;
+begin
+  if _DebounceHelper = nil then
+    _DebounceHelper := TDebounceHelper.Create;
+
+  _DebounceTimer := TTimer.Create(nil);
+  _DebounceTimer.Interval := DEBOUNCE_INTERVAL;
+  _DebounceTimer.OnTimer := @_DebounceHelper.OnTimer;
+  _DebounceTimer.Enabled := False;
+
+  _PendingWindowPos := TPoint.Create(0, 0);
+  _LastSavedWindowPos := TPoint.Create(0, 0);
+
+  // Initialize workspace buffers
+  Workspace := LoadWorkspace;
+  _PendingWorkspace := Workspace;
+  _LastSavedWorkspace := Workspace;
+  _WorkspaceDirty := False;
+end;
+
+procedure FinalizeWindowPosDebouncing;
+begin
+  if _DebounceTimer <> nil then
+    begin
+    if _DebounceTimer.Enabled then
+      _DebounceTimer.Enabled := False;
+
+    if (_PendingWindowPos.X <> _LastSavedWindowPos.X) or
+       (_PendingWindowPos.Y <> _LastSavedWindowPos.Y) then
+      begin
+      _WriteWindowPos(_PendingWindowPos);
+      end;
+
+    if _WorkspaceDirty then
+      begin
+      if (_PendingWorkspace.VarName <> _LastSavedWorkspace.VarName) or
+         (_PendingWorkspace.Expression <> _LastSavedWorkspace.Expression) then
+        begin
+        _WriteWorkspace(_PendingWorkspace.VarName, _PendingWorkspace.Expression);
+        end;
+      end;
+
+    FreeAndNil(_DebounceTimer);
+    end;
+
+  if _DebounceHelper <> nil then
+    FreeAndNil(_DebounceHelper);
 end;
 
 end.
