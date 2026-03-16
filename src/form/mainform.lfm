@@ -1,4 +1,4 @@
-object Calculator: TCalculator
+object MainFormInstance: TMainForm
   Left = 1052
   Height = 629
   Top = 238

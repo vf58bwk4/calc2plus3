@@ -13,9 +13,9 @@ uses
 
 type
 
-  { TCalculator }
+  { TMainForm }
 
-  TCalculator = class(TForm)
+  TMainForm = class(TForm)
     History:    TStringGrid;
     VarName:    TEdit;
     Expression: TEdit;
@@ -54,7 +54,7 @@ type
   end;
 
 var
-  Calculator: TCalculator;
+  MainFormInstance: TMainForm;
 
 implementation
 
@@ -68,7 +68,7 @@ const
   HOTKEY_ID = 1;
 
 
-procedure TCalculator.FormCreate(Sender: TObject);
+procedure TMainForm.FormCreate(Sender: TObject);
 var
   WS: TWorkspaceState;
   WP: TPoint;
@@ -104,18 +104,18 @@ begin
   DisplayService.StatusOK;
 end;
 
-procedure TCalculator.FormDestroy(Sender: TObject);
+procedure TMainForm.FormDestroy(Sender: TObject);
 begin
   Windows.UnregisterHotKey(Handle, HOTKEY_ID);
   Storage.FinalizeWindowPosDebouncing;
 end;
 
-procedure TCalculator.FormShow(Sender: TObject);
+procedure TMainForm.FormShow(Sender: TObject);
 begin
   InputController.SetFocus;
 end;
 
-procedure TCalculator.FormClose(Sender: TObject; var CloseAction: TCloseAction);
+procedure TMainForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
   if WindowState = wsMinimized then
     begin
@@ -124,13 +124,13 @@ begin
   CloseAction := caHide;
 end;
 
-procedure TCalculator.ShowNormalWindow; inline;
+procedure TMainForm.ShowNormalWindow; inline;
 begin
   WindowState := wsNormal;
   Show;
 end;
 
-procedure TCalculator.TrayIconMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+procedure TMainForm.TrayIconMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
   if Button = mbRight then
     begin
@@ -142,13 +142,13 @@ begin
     end;
 end;
 
-procedure TCalculator.MenuItemCloseClick(Sender: TObject);
+procedure TMainForm.MenuItemCloseClick(Sender: TObject);
 begin
   UnregisterAutoRun(APP_NAME);
   Application.Terminate;
 end;
 
-procedure TCalculator.WMHotKey(var Msg: TMessage);
+procedure TMainForm.WMHotKey(var Msg: TMessage);
 begin
   if Msg.wParam = HOTKEY_ID then
     begin
@@ -170,33 +170,33 @@ begin
     end;
 end;
 
-procedure TCalculator.GridMouseWheelDown(Sender: TObject; Shift: TShiftState; MousePos: TPoint; var Handled: Boolean);
+procedure TMainForm.GridMouseWheelDown(Sender: TObject; Shift: TShiftState; MousePos: TPoint; var Handled: Boolean);
 begin
   GridUtils.StringGridMouseWheelDown(Sender as TStringGrid, Shift, MousePos, Handled);
 end;
 
-procedure TCalculator.GridMouseWheelUp(Sender: TObject; Shift: TShiftState; MousePos: TPoint; var Handled: Boolean);
+procedure TMainForm.GridMouseWheelUp(Sender: TObject; Shift: TShiftState; MousePos: TPoint; var Handled: Boolean);
 begin
   GridUtils.StringGridMouseWheelUp(Sender as TStringGrid, Shift, MousePos, Handled);
 end;
 
-procedure TCalculator.ExpressionChange(Sender: TObject);
+procedure TMainForm.ExpressionChange(Sender: TObject);
 begin
   InputController.ExpressionChange;
   Storage.SaveWorkspace(VarName.Text, Expression.Text);
 end;
 
-procedure TCalculator.VarNameChange(Sender: TObject);
+procedure TMainForm.VarNameChange(Sender: TObject);
 begin
   Storage.SaveWorkspace(VarName.Text, Expression.Text);
 end;
 
-procedure TCalculator.FormChangeBounds(Sender: TObject);
+procedure TMainForm.FormChangeBounds(Sender: TObject);
 begin
   Storage.SaveWindowPos(Point(Left, Top));
 end;
 
-procedure TCalculator.VarNameKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+procedure TMainForm.VarNameKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   if IsKeyCombinationMatch(Key, Shift, [VK_BACK], [ssCtrl]) then
     begin
@@ -216,7 +216,7 @@ begin
     end;
 end;
 
-procedure TCalculator.ExpressionKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+procedure TMainForm.ExpressionKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   if IsKeyCombinationMatch(Key, Shift, [VK_Z], [ssCtrl]) then
     begin
@@ -263,7 +263,7 @@ begin
     end;
 end;
 
-procedure TCalculator.HistoryKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+procedure TMainForm.HistoryKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssCtrl]) then
     begin
@@ -275,7 +275,7 @@ begin
     end;
 end;
 
-procedure TCalculator.HistoryDblClick(Sender: TObject);
+procedure TMainForm.HistoryDblClick(Sender: TObject);
 var
   Mods: TShiftState;
 begin
@@ -295,7 +295,7 @@ begin
     end;
 end;
 
-procedure TCalculator.VariableListKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+procedure TMainForm.VariableListKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssCtrl]) then
     begin
@@ -311,7 +311,7 @@ begin
     end;
 end;
 
-procedure TCalculator.VarListDblClick(Sender: TObject);
+procedure TMainForm.VarListDblClick(Sender: TObject);
 var
   Mods: TShiftState;
 begin

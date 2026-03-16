@@ -86,7 +86,7 @@
       <Unit>
         <Filename Value="form\mainform.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="Calculator"/>
+        <ComponentName Value="MainFormInstance"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="MainForm"/>

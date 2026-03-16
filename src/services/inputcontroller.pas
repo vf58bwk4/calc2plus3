@@ -42,7 +42,7 @@ procedure ExpressionChange;
 procedure UndoExpression;
 procedure RedoExpression;
 
-procedure Initialize(const F: TCalculator);
+procedure Initialize(const F: TMainForm);
 
 
 implementation
@@ -309,7 +309,7 @@ begin
   UndoRedoService.AfterMutatingState;
 end;
 
-procedure Initialize(const F: TCalculator);
+procedure Initialize(const F: TMainForm);
 begin
   with F do
     begin

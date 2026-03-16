@@ -30,7 +30,7 @@ begin
   Application.Scaled := True;
 
   Application.Initialize;
-  Application.CreateForm(TCalculator, Calculator);
+  Application.CreateForm(TMainForm, MainFormInstance);
 
   Application.Run;
 
