@@ -7,7 +7,7 @@ unit StorageInterface;
 interface
 
 uses
-  Types;
+  Types, Grids, Config;
 
 type
   TWorkspaceState = record
@@ -24,8 +24,8 @@ type
     procedure SaveWorkspace(const VarName, Expression: String);
     procedure SaveWindowPos(const Pos: TPoint);
     
-    procedure InitializeWindowPosDebouncing;
-    procedure FinalizeWindowPosDebouncing;
+    procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
+    procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
   end;
 
 implementation
