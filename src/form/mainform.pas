@@ -68,6 +68,16 @@ uses
 const
   HOTKEY_ID = 1;
 
+procedure TMainForm.ShowNormalWindow; inline;
+begin
+  WindowState := wsNormal;
+  Show;
+end;
+
+procedure TMainForm.AppExceptionHandler(Sender: TObject; E: Exception);
+begin
+  DisplayService.StatusError(E.Message);
+end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
 var
@@ -78,7 +88,7 @@ begin
   TrayIcon.Hint := Application.Title;
 
   MainService.Initialize(self);
-  Application.OnException := @MainFormInstance.AppExceptionHandler;
+  Application.OnException := @AppExceptionHandler;
 
   VarName.OnChange    := @VarNameChange;
   Expression.OnChange := @ExpressionChange;
@@ -104,12 +114,6 @@ begin
     Application.ProcessMessages;
     end;
   CloseAction := caHide;
-end;
-
-procedure TMainForm.ShowNormalWindow; inline;
-begin
-  WindowState := wsNormal;
-  Show;
 end;
 
 procedure TMainForm.TrayIconMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
@@ -173,7 +177,7 @@ end;
 
 procedure TMainForm.FormChangeBounds(Sender: TObject);
 begin
-  Storage.SaveWindowPos(Point(Left, Top));
+  MainService.SaveWindowPos;
 end;
 
 procedure TMainForm.VarNameKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -314,18 +318,5 @@ begin
     MainService.RemoveVariable;
     end;
 end;
-
-procedure TMainForm.AppExceptionHandler(Sender: TObject; E: Exception);
-begin
-  try
-    DisplayService.StatusError(E.Message);
-  except
-  end;
-  try
-    ShowMessage('Unhandled exception: ' + E.ClassName + ': ' + E.Message);
-  except
-  end;
-end;
-
 
 end.

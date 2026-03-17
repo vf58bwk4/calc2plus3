@@ -43,19 +43,21 @@ procedure UndoExpression;
 procedure RedoExpression;
 
 procedure Initialize(const F: TMainForm);
+procedure SaveWindowPos;
 
 
 implementation
 
 uses
-  SysUtils, Windows, Controls, StdCtrls, Grids,
-  ExprService, FormUtils, UndoRedoService, GridUtils,
-  DisplayService, HistoryService, VariableService;
+  SysUtils, Windows, Controls, StdCtrls, Grids, Types,
+  FormUtils, GridUtils, Storage,
+  ExprService, DisplayService, HistoryService, VariableService, UndoRedoService;
 
 var
   _VarName:    TEdit;
   _Expression: TEdit;
   FocusSet:    Boolean;
+  _MainForm:   TMainForm;
 
   {================ Private routines ================}
 
@@ -86,8 +88,8 @@ begin
   CursorPos    := _Expression.SelStart;
   OldSelLength := _Expression.SelLength;
 
-  _Expression.Text := Copy(_Expression.Text, 1, CursorPos) + Value + Copy(_Expression.Text, CursorPos +
-    OldSelLength + 1, Length(_Expression.Text));
+  _Expression.Text := Copy(_Expression.Text, 1, CursorPos) + Value + Copy(_Expression.Text, CursorPos + OldSelLength +
+    1, Length(_Expression.Text));
 
   _Expression.SelStart := CursorPos + Length(Value);
 
@@ -281,6 +283,12 @@ end;
 procedure ExpressionChange;
 begin
   UndoRedoService.RecordExpressionChange(_Expression.Text, _Expression.SelStart);
+  Storage.SaveWorkspace(_VarName.Text, _Expression.Text);
+end;
+
+procedure VarNameChange;
+begin
+  Storage.SaveWorkspace(_VarName.Text, _Expression.Text);
 end;
 
 procedure UndoExpression;
@@ -310,18 +318,45 @@ begin
 end;
 
 procedure Initialize(const F: TMainForm);
+var
+  WP: TPoint;
+  WS: TWorkspaceState;
 begin
-  with F do
-    begin
-    _VarName    := VarName;
-    _Expression := Expression;
+  DisplayService.Initialize(F.StatusBar);
+  DisplayService.StatusOK;
 
-    DisplayService.Initialize(StatusBar);
-    HistoryService.Initialize(History);
-    VariableService.Initialize(VarList);
-    UndoRedoService.SetExpressionState(Expression.Text, Expression.SelStart);
+  _VarName    := F.VarName;
+  _Expression := F.Expression;
+    try
+      begin
+      WP   := FormUtils.AdjustWindowPos(Storage.LoadWindowPos, Width, Height);
+      F.Left := WP.X;
+      F.Top  := WP.Y;
+
+      WS               := Storage.LoadWorkspace;
+      _VarName.Text    := WS.VarName;
+      _Expression.Text := WS.Expression;
+      end;
+    except
+      begin
+      DisplayService.StatusError('Failed to load workspace.');
+      end;
     end;
+
+  UndoRedoService.SetExpressionState(_Expression.Text, _Expression.SelStart);
+  HistoryService.Initialize(F.History);
+  VariableService.Initialize(F.VarList);
+  _MainForm := F;
+end;
+
+procedure SaveWindowPos;
+var
+  P: TPoint;
+begin
+  if not Assigned(_MainForm) then
+    Exit;
+  P := Point(_MainForm.Left, _MainForm.Top);
+  Storage.SaveWindowPos(P);
 end;
 
 end.
-
