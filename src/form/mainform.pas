@@ -61,7 +61,7 @@ implementation
 {$R *.lfm}
 
 uses
-  Config, FormUtils, GridUtils, InputController, Autorun,
+  Config, FormUtils, GridUtils, MainService, Autorun,
   Storage, DisplayService, HistoryService, VariableService, UndoRedoService, Types;
 
 const
@@ -86,7 +86,7 @@ begin
   VarName.Text    := WS.VarName;
   Expression.Text := WS.Expression;
 
-  InputController.Initialize(self);
+  MainService.Initialize(self);
   DisplayService.Initialize(StatusBar);
   HistoryService.Initialize(History);
   VariableService.Initialize(VarList);
@@ -112,7 +112,7 @@ end;
 
 procedure TMainForm.FormShow(Sender: TObject);
 begin
-  InputController.SetFocus;
+  MainService.SetFocus;
 end;
 
 procedure TMainForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -144,7 +144,6 @@ end;
 
 procedure TMainForm.MenuItemCloseClick(Sender: TObject);
 begin
-  UnregisterAutoRun(APP_NAME);
   Application.Terminate;
 end;
 
@@ -182,7 +181,7 @@ end;
 
 procedure TMainForm.ExpressionChange(Sender: TObject);
 begin
-  InputController.ExpressionChange;
+  MainService.ExpressionChange;
   Storage.SaveWorkspace(VarName.Text, Expression.Text);
 end;
 
@@ -200,19 +199,19 @@ procedure TMainForm.VarNameKeyDown(Sender: TObject; var Key: Word; Shift: TShift
 begin
   if IsKeyCombinationMatch(Key, Shift, [VK_BACK], [ssCtrl]) then
     begin
-    InputController.ClearVarName;
+    MainService.ClearVarName;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssCtrl]) then
     begin
-    InputController.CalculateAndUpsertVariable;
+    MainService.CalculateAndUpsertVariable;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_ADD, VK_OEM_PLUS], [ssCtrl]) then
     begin
-    InputController.CalculateAndAddVariable;
+    MainService.CalculateAndAddVariable;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_SUBTRACT, VK_OEM_MINUS], [ssCtrl]) then
     begin
-    InputController.CalculateAndSubtractVariable;
+    MainService.CalculateAndSubtractVariable;
     end;
 end;
 
@@ -220,31 +219,31 @@ procedure TMainForm.ExpressionKeyDown(Sender: TObject; var Key: Word; Shift: TSh
 begin
   if IsKeyCombinationMatch(Key, Shift, [VK_Z], [ssCtrl]) then
     begin
-    InputController.UndoExpression;
+    MainService.UndoExpression;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_Y], [ssCtrl]) then
     begin
-    InputController.RedoExpression;
+    MainService.RedoExpression;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_BACK], [ssCtrl]) then
     begin
-    InputController.DoCtrlBackspace;
+    MainService.DoCtrlBackspace;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssCtrl]) then
     begin
-    InputController.CalculateAndUpsertVariable;
+    MainService.CalculateAndUpsertVariable;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_ADD, VK_OEM_PLUS], [ssCtrl]) then
     begin
-    InputController.CalculateAndAddVariable;
+    MainService.CalculateAndAddVariable;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_SUBTRACT, VK_OEM_MINUS], [ssCtrl]) then
     begin
-    InputController.CalculateAndSubtractVariable;
+    MainService.CalculateAndSubtractVariable;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], []) then
     begin
-    InputController.CalculateAndInsertInHistory;
+    MainService.CalculateAndInsertInHistory;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_ESCAPE], []) then
     begin
@@ -254,7 +253,7 @@ begin
       end
     else if IsEditTextSelected(Expression) then
         begin
-        InputController.DoCtrlBackspace;
+        MainService.DoCtrlBackspace;
         end
       else
         begin
@@ -267,11 +266,11 @@ procedure TMainForm.HistoryKeyDown(Sender: TObject; var Key: Word; Shift: TShift
 begin
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssCtrl]) then
     begin
-    InputController.ReplaceExpressionFromHistoryOnKey;
+    MainService.ReplaceExpressionFromHistoryOnKey;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], []) then
     begin
-    InputController.CopyFromHistoryToExpressionOnKey;
+    MainService.CopyFromHistoryToExpressionOnKey;
     end;
 end;
 
@@ -283,15 +282,15 @@ begin
 
   if CheckModsState(Mods, []) then
     begin
-    InputController.CopyFromHistoryToExpressionOnClick;
+    MainService.CopyFromHistoryToExpressionOnClick;
     end;
   if CheckModsState(Mods, [ssCtrl]) then
     begin
-    InputController.ReplaceExpressionFromHistoryOnClick;
+    MainService.ReplaceExpressionFromHistoryOnClick;
     end;
   if CheckModsState(Mods, [ssCtrl, ssAlt]) then
     begin
-    InputController.RemoveHistoryItem;
+    MainService.RemoveHistoryItem;
     end;
 end;
 
@@ -299,15 +298,15 @@ procedure TMainForm.VariableListKeyDown(Sender: TObject; var Key: Word; Shift: T
 begin
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssCtrl]) then
     begin
-    InputController.ReplaceExpressionFromVarListOnKey;
+    MainService.ReplaceExpressionFromVarListOnKey;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], []) then
     begin
-    InputController.CopyFromVarListToExpressionOnKey;
+    MainService.CopyFromVarListToExpressionOnKey;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssShift]) then
     begin
-    InputController.ReplaceVarNameFromVarListOnKey;
+    MainService.ReplaceVarNameFromVarListOnKey;
     end;
 end;
 
@@ -319,20 +318,21 @@ begin
 
   if CheckModsState(Mods, []) then
     begin
-    InputController.CopyFromVarListToExpressionOnClick;
+    MainService.CopyFromVarListToExpressionOnClick;
     end;
   if CheckModsState(Mods, [ssCtrl]) then
     begin
-    InputController.ReplaceExpressionFromVarListOnClick;
+    MainService.ReplaceExpressionFromVarListOnClick;
     end;
   if CheckModsState(Mods, [ssShift]) then
     begin
-    InputController.ReplaceVarNameFromVarListOnClick;
+    MainService.ReplaceVarNameFromVarListOnClick;
     end;
   if CheckModsState(Mods, [ssCtrl, ssAlt]) then
     begin
-    InputController.RemoveVariable;
+    MainService.RemoveVariable;
     end;
 end;
 
 end.
+

@@ -86,15 +86,15 @@
       <Unit>
         <Filename Value="form\mainform.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="MainFormInstance"/>
+        <ComponentName Value="MainForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="MainForm"/>
       </Unit>
       <Unit>
-        <Filename Value="services\inputcontroller.pas"/>
+        <Filename Value="services\MainService.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="InputController"/>
+        <UnitName Value="MainService"/>
       </Unit>
       <Unit>
         <Filename Value="services\displayservice.pas"/>
@@ -156,6 +156,16 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="UndoRedoService"/>
       </Unit>
+      <Unit>
+        <Filename Value="services\storageinterface.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="StorageInterface"/>
+      </Unit>
+      <Unit>
+        <Filename Value="services\csvstorage.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="CSVStorage"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -214,3 +224,4 @@
     </Exceptions>
   </Debugging>
 </CONFIG>
+

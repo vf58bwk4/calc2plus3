@@ -19,20 +19,19 @@ const
   AppWideLockName = 'e045ebf8-d1c3-4572-ad38-64c3105ea46b';
 
 begin
-  if not AppWideLock.CreateLock(AppWideLockName) then
+  if AppWideLock.CreateLock(AppWideLockName) then
     begin
-    Exit;
+    Autorun.RegisterAutoRun(APP_NAME, ParamStr(0));
+
+    Application.Title  := APP_TITLE;
+    Application.Scaled := True;
+
+    Application.Initialize;
+    Application.CreateForm(TMainForm, MainFormInstance);
+
+    Application.Run;
+
+    Autorun.UnregisterAutoRun(APP_NAME);
+    AppWideLock.DropLock;
     end;
-
-  RegisterAutoRun(APP_NAME, ParamStr(0));
-
-  Application.Title  := APP_TITLE;
-  Application.Scaled := True;
-
-  Application.Initialize;
-  Application.CreateForm(TMainForm, MainFormInstance);
-
-  Application.Run;
-
-  AppWideLock.DropLock;
 end.
