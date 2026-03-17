@@ -315,6 +315,11 @@ begin
     begin
     _VarName    := VarName;
     _Expression := Expression;
+
+    DisplayService.Initialize(StatusBar);
+    HistoryService.Initialize(History);
+    VariableService.Initialize(VarList);
+    UndoRedoService.SetExpressionState(Expression.Text, Expression.SelStart);
     end;
 end;
 

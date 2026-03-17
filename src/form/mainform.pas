@@ -87,10 +87,6 @@ begin
   Expression.Text := WS.Expression;
 
   MainService.Initialize(self);
-  DisplayService.Initialize(StatusBar);
-  HistoryService.Initialize(History);
-  VariableService.Initialize(VarList);
-  UndoRedoService.SetExpressionState(Expression.Text, Expression.SelStart);
 
   SetEditMargins(VarName, 8, 8);
   SetEditMargins(Expression, 8, 8);
