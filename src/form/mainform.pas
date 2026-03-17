@@ -51,6 +51,7 @@ type
     procedure WMHotKey(var Msg: TMessage); Message WM_HOTKEY;
   Private
     procedure ShowNormalWindow;
+    procedure AppExceptionHandler(Sender: TObject; E: Exception);
   end;
 
 var
@@ -62,7 +63,7 @@ implementation
 
 uses
   Config, FormUtils, GridUtils, MainService, Autorun,
-  Storage, DisplayService, HistoryService, VariableService, UndoRedoService, Types;
+  Storage, DisplayService, HistoryService, VariableService, UndoRedoService, Types, Dialogs;
 
 const
   HOTKEY_ID = 1;
@@ -70,34 +71,19 @@ const
 
 procedure TMainForm.FormCreate(Sender: TObject);
 var
-  WS: TWorkspaceState;
-  WP: TPoint;
 begin
   Windows.RegisterHotKey(Handle, HOTKEY_ID, HOT_KEY.ModKey, HOT_KEY.VirtualKey);
 
   Caption       := Application.Title;
   TrayIcon.Hint := Application.Title;
 
-  WP   := FormUtils.AdjustWindowPos(Storage.LoadWindowPos, Width, Height);
-  Left := WP.X;
-  Top  := WP.Y;
-
-  WS              := Storage.LoadWorkspace;
-  VarName.Text    := WS.VarName;
-  Expression.Text := WS.Expression;
-
   MainService.Initialize(self);
-
-  SetEditMargins(VarName, 8, 8);
-  SetEditMargins(Expression, 8, 8);
-  SetEditWordBreakCallback(Expression);
+  Application.OnException := @MainFormInstance.AppExceptionHandler;
 
   VarName.OnChange    := @VarNameChange;
   Expression.OnChange := @ExpressionChange;
 
   Storage.InitializeWindowPosDebouncing;
-
-  DisplayService.StatusOK;
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
@@ -178,12 +164,11 @@ end;
 procedure TMainForm.ExpressionChange(Sender: TObject);
 begin
   MainService.ExpressionChange;
-  Storage.SaveWorkspace(VarName.Text, Expression.Text);
 end;
 
 procedure TMainForm.VarNameChange(Sender: TObject);
 begin
-  Storage.SaveWorkspace(VarName.Text, Expression.Text);
+  MainService.VarNameChange;
 end;
 
 procedure TMainForm.FormChangeBounds(Sender: TObject);
@@ -330,5 +315,17 @@ begin
     end;
 end;
 
-end.
+procedure TMainForm.AppExceptionHandler(Sender: TObject; E: Exception);
+begin
+  try
+    DisplayService.StatusError(E.Message);
+  except
+  end;
+  try
+    ShowMessage('Unhandled exception: ' + E.ClassName + ': ' + E.Message);
+  except
+  end;
+end;
 
+
+end.
