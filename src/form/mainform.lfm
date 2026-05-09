@@ -1,4 +1,4 @@
-object MainFormInstance: TMainForm
+object MainForm: TMainForm
   Left = 1052
   Height = 629
   Top = 238
@@ -8,6 +8,7 @@ object MainFormInstance: TMainForm
   ClientHeight = 629
   ClientWidth = 471
   DesignTimePPI = 120
+  Font.Height = -15
   LCLVersion = '4.6.0.0'
   OnChangeBounds = FormChangeBounds
   OnClose = FormClose

@@ -15,19 +15,27 @@ type
     Expression: String;
   end;
 
+function MakeWorkspaceState(const VarName, Expression: String): TWorkspaceState;
+
+type
   IStorage = interface
-    ['{A3B5C7D9-E1F3-4A5B-8C9D-E0F1A2B3C4D5}']
-    
     function LoadWindowPos: TPoint;
     function LoadWorkspace: TWorkspaceState;
-    
+
     procedure SaveWorkspace(const VarName, Expression: String);
     procedure SaveWindowPos(const Pos: TPoint);
-    
+
     procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
     procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
   end;
 
 implementation
+
+function MakeWorkspaceState(const VarName, Expression: String): TWorkspaceState;
+begin
+  Result.VarName    := VarName;
+  Result.Expression := Expression;
+end;
+
 
 end.

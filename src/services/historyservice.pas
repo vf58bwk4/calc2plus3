@@ -9,28 +9,28 @@ interface
 uses
   Grids;
 
-procedure Initialize(History: TStringGrid);
+procedure Initialize(AHistory: TStringGrid);
 procedure InsertItem(const ResultText, ExpressionText: String);
 procedure RemoveItem;
-function  Grid: TStringGrid;
+function Grid: TStringGrid;
 
 implementation
 
 uses
-  SysUtils, Config, Storage, GridUtils, DisplayService;
+  Config, Storage, GridUtils;
 
 var
-  _History: TStringGrid;
+  History: TStringGrid;
 
-procedure Initialize(History: TStringGrid);
+procedure Initialize(AHistory: TStringGrid);
 begin
-  _History := History;
-  _History.AutoFillColumns := True;
+  History                 := AHistory;
+  History.AutoFillColumns := True;
 
-  LoadGridFromDataFile(_History, HISTORY_FILE);
+  Storage.LoadGridFromDataFile(History, HISTORY_FILE);
 
-  _History.Row := _History.RowCount - 1;
-  _History.Col := 0;
+  History.Row := History.RowCount - 1;
+  History.Col := 0;
 end;
 
 procedure InsertItem(const ResultText, ExpressionText: String);
@@ -40,53 +40,40 @@ var
 
   procedure AppendRow;
   begin
-    NewRowIdx                     := _History.RowCount;
-    _History.RowCount            := NewRowIdx + 1;
-    _History.Cells[0, NewRowIdx] := ResultText;
-    _History.Cells[1, NewRowIdx] := ExpressionText;
-    _History.TopRow              := NewRowIdx;
+    NewRowIdx                   := History.RowCount;
+    History.RowCount            := NewRowIdx + 1;
+    History.Cells[0, NewRowIdx] := ResultText;
+    History.Cells[1, NewRowIdx] := ExpressionText;
+    History.TopRow              := NewRowIdx;
   end;
 
 begin
-  if _History.RowCount = 0 then
+  if History.RowCount = 0 then
     begin
     AppendRow;
     end
   else
     begin
-    LastRowIdx    := _History.RowCount - 1;
-    OldResult     := _History.Cells[0, LastRowIdx];
-    OldExpression := _History.Cells[1, LastRowIdx];
+    LastRowIdx    := History.RowCount - 1;
+    OldResult     := History.Cells[0, LastRowIdx];
+    OldExpression := History.Cells[1, LastRowIdx];
     if not ((ResultText = OldResult) and (ExpressionText = OldExpression)) then
       begin
       AppendRow;
       end;
     end;
-
-  SaveGridToDataFile(_History, HISTORY_FILE);
+  Storage.SaveGridToDataFile(History, HISTORY_FILE);
 end;
 
 procedure RemoveItem;
 begin
-    try
-      begin
-      _History.DeleteRow(GetClickedGridRowIndex(_History));
-
-      SaveGridToDataFile(_History, HISTORY_FILE);
-
-      DisplayService.StatusOK;
-      end
-    except
-    on E: Exception do
-      begin
-      DisplayService.StatusError(E.Message);
-      end;
-    end;
+  History.DeleteRow(GetClickedGridRowIndex(History));
+  Storage.SaveGridToDataFile(History, HISTORY_FILE);
 end;
 
 function Grid: TStringGrid;
 begin
-  Result := _History;
+  Result := History;
 end;
 
 end.

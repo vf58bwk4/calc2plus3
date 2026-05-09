@@ -20,40 +20,40 @@ procedure RegisterAutoRun(const AppName, AppPath: String);
 var
   Reg: TRegistry;
 begin
-  Reg := TRegistry.Create;
-  try
     try
+    Reg := TRegistry.Create;
+      try
       Reg.RootKey := HKEY_CURRENT_USER;
       if Reg.OpenKey(AutoRunRegPath, True) then
-      begin
+        begin
         Reg.WriteString(AppName, AppPath);
         Reg.CloseKey;
+        end;
+      finally
+      Reg.Free;
       end;
     except
     end;
-  finally
-    Reg.Free;
-  end;
 end;
 
 procedure UnregisterAutoRun(const AppName: String);
 var
   Reg: TRegistry;
 begin
-  Reg := TRegistry.Create;
-  try
     try
+    Reg := TRegistry.Create;
+      try
       Reg.RootKey := HKEY_CURRENT_USER;
       if Reg.OpenKey(AutoRunRegPath, False) then
-      begin
+        begin
         Reg.DeleteValue(AppName);
         Reg.CloseKey;
+        end;
+      finally
+      Reg.Free;
       end;
     except
     end;
-  finally
-    Reg.Free;
-  end;
 end;
 
 end.

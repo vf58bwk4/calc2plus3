@@ -92,7 +92,7 @@
         <UnitName Value="MainForm"/>
       </Unit>
       <Unit>
-        <Filename Value="services\MainService.pas"/>
+        <Filename Value="services\mainservice.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="MainService"/>
       </Unit>
@@ -147,24 +147,22 @@
         <UnitName Value="DebugLog"/>
       </Unit>
       <Unit>
-        <Filename Value="utils\storage.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="Storage"/>
-      </Unit>
-      <Unit>
         <Filename Value="services\undoredoservice.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UndoRedoService"/>
       </Unit>
       <Unit>
-        <Filename Value="services\storageinterface.pas"/>
+        <Filename Value="repository\csvstorage.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="StorageInterface"/>
       </Unit>
       <Unit>
-        <Filename Value="services\csvstorage.pas"/>
+        <Filename Value="repository\storage.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="CSVStorage"/>
+      </Unit>
+      <Unit>
+        <Filename Value="repository\storageinterface.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="StorageInterface"/>
       </Unit>
     </Units>
   </ProjectOptions>
@@ -224,4 +222,3 @@
     </Exceptions>
   </Debugging>
 </CONFIG>
-

@@ -10,6 +10,8 @@ interface
 uses
   MainForm;
 
+procedure Initialize(const F: TMainForm);
+
 procedure CalculateAndUpsertVariable;
 procedure CalculateAndAddVariable;
 procedure CalculateAndSubtractVariable;
@@ -39,10 +41,11 @@ procedure RemoveHistoryItem;
 procedure SetFocus;
 
 procedure ExpressionChange;
+procedure VarNameChange;
+
 procedure UndoExpression;
 procedure RedoExpression;
 
-procedure Initialize(const F: TMainForm);
 procedure SaveWindowPos;
 
 
@@ -62,14 +65,15 @@ var
   {================ Private routines ================}
 
 type
-  TActionProc   = procedure(const Value: String);
-  TGetValueFunc = function(const Source: TStringGrid; const Param: Integer): String;
+  TValueAction      = procedure(const Value: String);
+  TGridValueContext = (vcSingleColumnGrid = 1, vcTwoColumnsGrid = 2);
+  TGridValueGetter  = function(const Grid: TStringGrid; const Context: Integer): String;
 
-procedure DoActionFromSource(ActionProc: TActionProc; GetValueFunc: TGetValueFunc; GetValueFuncParam: Integer; Source: TStringGrid);
+procedure ExecuteActionFromGrid(Action: TValueAction; ValueGetter: TGridValueGetter; Context: TGridValueContext; Grid: TStringGrid);
 begin
     try
       begin
-      ActionProc(GetValueFunc(Source, GetValueFuncParam));
+      Action(ValueGetter(Grid, Ord(Context)));
 
       DisplayService.StatusOK;
       end;
@@ -112,9 +116,9 @@ begin
 end;
 
 type
-  TOperationFunc = function(const A, B: Double): Double is nested;
+  TValueUpdater = function(const OldValue, NewValue: Double): Double is nested;
 
-procedure CalculateAndModifyVariable(const OpFunc: TOperationFunc);
+procedure CalculateAndModifyVariable(const OpFunc: TValueUpdater);
 var
   VarName:  String;
   VarValue: Double;
@@ -140,37 +144,87 @@ end;
 
 {================ Interface routines ==============}
 
+procedure Initialize(const F: TMainForm);
+var
+  WP: TPoint;
+  WS: TWorkspaceState;
+begin
+  DisplayService.Initialize(F.StatusBar);
+  DisplayService.StatusOK;
+
+  _MainForm   := F;
+  _VarName    := F.VarName;
+  _Expression := F.Expression;
+    try
+      begin
+      WP     := FormUtils.AdjustWindowPos(Storage.LoadWindowPos, F.Width, F.Height);
+      F.Left := WP.X;
+      F.Top  := WP.Y;
+
+      WS               := Storage.LoadWorkspace;
+      _VarName.Text    := WS.VarName;
+      _Expression.Text := WS.Expression;
+      end;
+    except
+      begin
+      DisplayService.StatusError('Failed to load workspace.');
+      end;
+    end;
+
+    try
+      begin
+      VariableService.Initialize(F.VarList);
+      end;
+    except
+      begin
+      DisplayService.StatusError('Failed to load variables.');
+      end;
+    end;
+
+    try
+      begin
+      HistoryService.Initialize(F.History);
+      end;
+    except
+      begin
+      DisplayService.StatusError('Failed to load history.');
+      end;
+    end;
+
+  UndoRedoService.SetUndoRedoState(MakeUndoRedoState(_Expression.Text, _Expression.SelStart));
+end;
+
 procedure CalculateAndUpsertVariable;
 
-  function OpFunc(const OldVal, NewVal: Double): Double;
+  function Updater(const OldVal, NewVal: Double): Double;
   begin
     Result := NewVal;
   end;
 
 begin
-  CalculateAndModifyVariable(@OpFunc);
+  CalculateAndModifyVariable(@Updater);
 end;
 
 procedure CalculateAndAddVariable;
 
-  function OpFunc(const OldVal, NewVal: Double): Double;
+  function Updater(const OldVal, NewVal: Double): Double;
   begin
     Result := OldVal + NewVal;
   end;
 
 begin
-  CalculateAndModifyVariable(@OpFunc);
+  CalculateAndModifyVariable(@Updater);
 end;
 
 procedure CalculateAndSubtractVariable;
 
-  function OpFunc(const OldVal, NewVal: Double): Double;
+  function Updater(const OldVal, NewVal: Double): Double;
   begin
     Result := OldVal - NewVal;
   end;
 
 begin
-  CalculateAndModifyVariable(@OpFunc);
+  CalculateAndModifyVariable(@Updater);
 end;
 
 procedure CalculateAndInsertInHistory;
@@ -180,7 +234,7 @@ begin
     try
       begin
       NewExpression := _Expression.Text;
-      NewResult     := DisplayService.FormatNumber(ExprService.Calculate(NewExpression));
+      NewResult     := VariableService.FormatNumber(ExprService.Calculate(NewExpression));
 
       _Expression.Text     := NewResult;
       _Expression.SelStart := Length(NewResult);
@@ -197,58 +251,54 @@ begin
     end;
 end;
 
-const
-  FROM_ONE_COLUMN  = 0;
-  FROM_TWO_COLUMNS = 1;
-
 procedure CopyFromHistoryToExpressionOnClick;
 begin
-  DoActionFromSource(@InsertInExpression, @GridUtils.GetClickedCellValue, FROM_TWO_COLUMNS, HistoryService.Grid);
+  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.GetClickedCellValue, vcTwoColumnsGrid, HistoryService.Grid);
 end;
 
 procedure CopyFromHistoryToExpressionOnKey;
 begin
-  DoActionFromSource(@InsertInExpression, @GridUtils.GetKeyDownCellValue, FROM_TWO_COLUMNS, HistoryService.Grid);
+  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.GetKeyDownCellValue, vcTwoColumnsGrid, HistoryService.Grid);
 end;
 
 procedure ReplaceExpressionFromHistoryOnClick;
 begin
-  DoActionFromSource(@ReplaceExpression, @GridUtils.GetClickedCellValue, FROM_TWO_COLUMNS, HistoryService.Grid);
+  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.GetClickedCellValue, vcTwoColumnsGrid, HistoryService.Grid);
 end;
 
 procedure ReplaceExpressionFromHistoryOnKey;
 begin
-  DoActionFromSource(@ReplaceExpression, @GridUtils.GetKeyDownCellValue, FROM_TWO_COLUMNS, HistoryService.Grid);
+  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.GetKeyDownCellValue, vcTwoColumnsGrid, HistoryService.Grid);
 end;
 
 procedure CopyFromVarListToExpressionOnKey;
 begin
-  DoActionFromSource(@InsertInExpression, @GridUtils.GetKeyDownCellValue, FROM_TWO_COLUMNS, VariableService.Grid);
+  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.GetKeyDownCellValue, vcTwoColumnsGrid, VariableService.Grid);
 end;
 
 procedure CopyFromVarListToExpressionOnClick;
 begin
-  DoActionFromSource(@InsertInExpression, @GridUtils.GetClickedCellValue, FROM_TWO_COLUMNS, VariableService.Grid);
+  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.GetClickedCellValue, vcTwoColumnsGrid, VariableService.Grid);
 end;
 
 procedure ReplaceExpressionFromVarListOnClick;
 begin
-  DoActionFromSource(@ReplaceExpression, @GridUtils.GetClickedCellValue, FROM_TWO_COLUMNS, VariableService.Grid);
+  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.GetClickedCellValue, vcTwoColumnsGrid, VariableService.Grid);
 end;
 
 procedure ReplaceExpressionFromVarListOnKey;
 begin
-  DoActionFromSource(@ReplaceExpression, @GridUtils.GetKeyDownCellValue, FROM_TWO_COLUMNS, VariableService.Grid);
+  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.GetKeyDownCellValue, vcTwoColumnsGrid, VariableService.Grid);
 end;
 
 procedure ReplaceVarNameFromVarListOnClick;
 begin
-  DoActionFromSource(@ReplaceVarName, @GridUtils.GetClickedCellValue, FROM_ONE_COLUMN, VariableService.Grid);
+  ExecuteActionFromGrid(@ReplaceVarName, @GridUtils.GetClickedCellValue, vcSingleColumnGrid, VariableService.Grid);
 end;
 
 procedure ReplaceVarNameFromVarListOnKey;
 begin
-  DoActionFromSource(@ReplaceVarName, @GridUtils.GetKeyDownCellValue, FROM_ONE_COLUMN, VariableService.Grid);
+  ExecuteActionFromGrid(@ReplaceVarName, @GridUtils.GetKeyDownCellValue, vcSingleColumnGrid, VariableService.Grid);
 end;
 
 procedure DoCtrlBackspace;
@@ -264,11 +314,13 @@ end;
 procedure RemoveVariable;
 begin
   VariableService.RemoveItem;
+  DisplayService.StatusOK;
 end;
 
 procedure RemoveHistoryItem;
 begin
   HistoryService.RemoveItem;
+  DisplayService.StatusOK;
 end;
 
 procedure SetFocus;
@@ -282,7 +334,7 @@ end;
 
 procedure ExpressionChange;
 begin
-  UndoRedoService.RecordExpressionChange(_Expression.Text, _Expression.SelStart);
+  UndoRedoService.RecordChange(MakeUndoRedoState(_Expression.Text, _Expression.SelStart));
   Storage.SaveWorkspace(_VarName.Text, _Expression.Text);
 end;
 
@@ -317,46 +369,9 @@ begin
   UndoRedoService.AfterMutatingState;
 end;
 
-procedure Initialize(const F: TMainForm);
-var
-  WP: TPoint;
-  WS: TWorkspaceState;
-begin
-  DisplayService.Initialize(F.StatusBar);
-  DisplayService.StatusOK;
-
-  _VarName    := F.VarName;
-  _Expression := F.Expression;
-    try
-      begin
-      WP   := FormUtils.AdjustWindowPos(Storage.LoadWindowPos, Width, Height);
-      F.Left := WP.X;
-      F.Top  := WP.Y;
-
-      WS               := Storage.LoadWorkspace;
-      _VarName.Text    := WS.VarName;
-      _Expression.Text := WS.Expression;
-      end;
-    except
-      begin
-      DisplayService.StatusError('Failed to load workspace.');
-      end;
-    end;
-
-  UndoRedoService.SetExpressionState(_Expression.Text, _Expression.SelStart);
-  HistoryService.Initialize(F.History);
-  VariableService.Initialize(F.VarList);
-  _MainForm := F;
-end;
-
 procedure SaveWindowPos;
-var
-  P: TPoint;
 begin
-  if not Assigned(_MainForm) then
-    Exit;
-  P := Point(_MainForm.Left, _MainForm.Top);
-  Storage.SaveWindowPos(P);
+  Storage.SaveWindowPos(Point(_MainForm.Left, _MainForm.Top));
 end;
 
 end.

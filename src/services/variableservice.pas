@@ -9,32 +9,47 @@ interface
 uses
   Grids;
 
-procedure Initialize(VarList: TStringGrid);
+procedure Initialize(AVarList: TStringGrid);
+function FormatNumber(const Value: Double): String;
 procedure ModifyVariable(const VarName: String; const NewValue: Double);
 procedure RemoveItem;
-function  GetValue(const VarName: String): Double;
-function  Grid: TStringGrid;
+function GetValue(const VarName: String): Double;
+function Grid: TStringGrid;
 
 implementation
 
 uses
-  SysUtils, Config, ExprService, Storage, GridUtils, DisplayService;
+  SysUtils, Config, ExprService, Storage, GridUtils;
 
 var
-  _VarList: TStringGrid;
+  VarList: TStringGrid;
 
-procedure Initialize(VarList: TStringGrid);
+function FormatNumber(const Value: Double): String;
+begin
+  Result := Value.ToString;
+end;
+
+
+procedure Initialize(AVarList: TStringGrid);
 var
   Row: Integer;
 begin
-  _VarList := VarList;
-  _VarList.AutoFillColumns := True;
+  VarList                 := AVarList;
+  VarList.AutoFillColumns := True;
 
-  LoadGridFromDataFile(_VarList, VARS_FILE);
+    try
+      begin
+      Storage.LoadGridFromDataFile(VarList, VARS_FILE);
 
-  for Row := _VarList.FixedRows to _VarList.RowCount - 1 do
-    begin
-    ExprService.UpsertVariable(_VarList.Cells[0, Row], StrToFloat(_VarList.Cells[1, Row]));
+      for Row := VarList.FixedRows to VarList.RowCount - 1 do
+        begin
+        ExprService.UpsertVariable(VarList.Cells[0, Row], StrToFloat(VarList.Cells[1, Row]));
+        end;
+      end;
+    except
+      begin
+      // TODO: cleanup VarList and ExprService variables
+      end;
     end;
 end;
 
@@ -43,17 +58,17 @@ var
   VarFound:     Boolean;
   DeleteRowIdx: Integer;
 begin
-  VarFound := FindRowByCol0Value(_VarList, VarName, DeleteRowIdx);
+  VarFound := FindRowByCol0Value(VarList, VarName, DeleteRowIdx);
 
   ExprService.UpsertVariable(VarName, NewValue);
 
   if VarFound then
     begin
-    _VarList.DeleteRow(DeleteRowIdx);
+    VarList.DeleteRow(DeleteRowIdx);
     end;
-  _VarList.InsertRowWithValues(_VarList.FixedRows, [VarName, DisplayService.FormatNumber(NewValue)]);
+  VarList.InsertRowWithValues(VarList.FixedRows, [VarName, FormatNumber(NewValue)]);
 
-  SaveGridToDataFile(_VarList, VARS_FILE);
+  Storage.SaveGridToDataFile(VarList, VARS_FILE);
 end;
 
 procedure RemoveItem;
@@ -61,43 +76,32 @@ var
   DeleteRowIdx: Integer;
   VarName:      String;
 begin
-    try
-      begin
-      DeleteRowIdx := GetClickedGridRowIndex(_VarList);
-      VarName      := _VarList.Cells[_VarList.FixedCols, DeleteRowIdx];
+  DeleteRowIdx := GetClickedGridRowIndex(VarList);
+  VarName      := VarList.Cells[VarList.FixedCols, DeleteRowIdx];
 
-      _VarList.DeleteRow(DeleteRowIdx);
-      ExprService.RemoveVariable(VarName);
+  VarList.DeleteRow(DeleteRowIdx);
+  ExprService.RemoveVariable(VarName);
 
-      SaveGridToDataFile(_VarList, VARS_FILE);
-
-      DisplayService.StatusOK;
-      end
-    except
-    on E: Exception do
-      begin
-      DisplayService.StatusError(E.Message);
-      end;
-    end;
+  Storage.SaveGridToDataFile(VarList, VARS_FILE);
 end;
 
 function GetValue(const VarName: String): Double;
 var
   RowIdx: Integer;
 begin
-  if FindRowByCol0Value(_VarList, VarName, RowIdx) then
+  if FindRowByCol0Value(VarList, VarName, RowIdx) then
     begin
-    Result := StrToFloat(_VarList.Cells[1, RowIdx]);
+    Result := StrToFloat(VarList.Cells[1, RowIdx]);
     end
   else
     begin
-    Result := 0.0;
+    Result := 0.0; // TODO: consider refactor this silent return
     end;
 end;
 
 function Grid: TStringGrid;
 begin
-  Result := _VarList;
+  Result := VarList;
 end;
 
 end.

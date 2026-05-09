@@ -9,10 +9,9 @@ interface
 uses
   ComCtrls;
 
-procedure Initialize(StatusBar: TStatusBar);
+procedure Initialize(AStatusBar: TStatusBar);
 procedure StatusOK;
 procedure StatusError(const Message: String);
-function  FormatNumber(const Value: Double): String;
 
 implementation
 
@@ -23,27 +22,21 @@ const
   STATUS_OK           = 'OK';
   STATUS_ERROR_PREFIX = 'ERROR: ';
 
-var
-  _StatusBar: TStatusBar;
+var StatusBar: TStatusBar;
 
-procedure Initialize(StatusBar: TStatusBar);
+procedure Initialize(AStatusBar: TStatusBar);
 begin
-  _StatusBar := StatusBar;
+  StatusBar := AStatusBar;
 end;
 
-procedure StatusOK; inline;
+procedure StatusOK;
 begin
-  _StatusBar.SimpleText := STATUS_OK;
+  StatusBar.SimpleText := STATUS_OK;
 end;
 
-procedure StatusError(const Message: String); inline;
+procedure StatusError(const Message: String);
 begin
-  _StatusBar.SimpleText := STATUS_ERROR_PREFIX + Message;
-end;
-
-function FormatNumber(const Value: Double): String; inline;
-begin
-  Result := Value.ToString;
+  StatusBar.SimpleText := STATUS_ERROR_PREFIX + Message;
 end;
 
 end.

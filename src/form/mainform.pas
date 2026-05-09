@@ -8,7 +8,7 @@ unit MainForm;
 interface
 
 uses
-  Classes, LCLType, Controls, StdCtrls, ComCtrls, Grids, ExtCtrls, Menus,
+  Classes, SysUtils, LCLType, Controls, StdCtrls, ComCtrls, Grids, ExtCtrls, Menus,
   Forms, LCLIntf, Windows, Messages;
 
 type
@@ -62,8 +62,8 @@ implementation
 {$R *.lfm}
 
 uses
-  Config, FormUtils, GridUtils, MainService, Autorun,
-  Storage, DisplayService, HistoryService, VariableService, UndoRedoService, Types, Dialogs;
+  Config, FormUtils, GridUtils, MainService,
+  Storage, DisplayService, Types, Dialogs;
 
 const
   HOTKEY_ID = 1;
@@ -80,7 +80,6 @@ begin
 end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
-var
 begin
   Windows.RegisterHotKey(Handle, HOTKEY_ID, HOT_KEY.ModKey, HOT_KEY.VirtualKey);
 

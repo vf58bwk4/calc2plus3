@@ -12,8 +12,10 @@ type
     SelStart: Integer;
   end;
 
-procedure SetExpressionState(const Text: String; const SelStart: Integer);
-procedure RecordExpressionChange(const Text: String; const SelStart: Integer);
+function MakeUndoRedoState(const Text: String; const SelStart: Integer): TUndoRedoState;
+
+procedure SetUndoRedoState(const AState: TUndoRedoState);
+procedure RecordChange(const AState: TUndoRedoState);
 
 function Undo(out Prev: TUndoRedoState): Boolean;
 function Redo(out Next: TUndoRedoState): Boolean;
@@ -27,103 +29,119 @@ const
   STACK_MAX = 100;
 
 var
-  _UndoStack: array[0..STACK_MAX - 1] of TUndoRedoState;
-  _RedoStack: array[0..STACK_MAX - 1] of TUndoRedoState;
-  _UndoHead:  Integer;
-  _UndoCount: Integer;
-  _RedoHead:  Integer;
-  _RedoCount: Integer;
-  _Suppressed: Boolean;
+  UndoStack:  array[0..STACK_MAX - 1] of TUndoRedoState;
+  RedoStack:  array[0..STACK_MAX - 1] of TUndoRedoState;
+  UndoHead:   Integer;
+  UndoCount:  Integer;
+  RedoHead:   Integer;
+  RedoCount:  Integer;
+  Suppressed: Boolean;
+
+  {================ Private routines ================}
 
 procedure UndoPush(const State: TUndoRedoState); inline;
 begin
-  _UndoStack[_UndoHead] := State;
-  _UndoHead  := (_UndoHead + 1) mod STACK_MAX;
-  if _UndoCount < STACK_MAX then Inc(_UndoCount);
+  UndoStack[UndoHead] := State;
+  UndoHead            := (UndoHead + 1) mod STACK_MAX;
+  if UndoCount < STACK_MAX then
+    begin
+    Inc(UndoCount);
+    end;
 end;
 
 function UndoPop: TUndoRedoState; inline;
 begin
-  _UndoHead := (_UndoHead - 1 + STACK_MAX) mod STACK_MAX;
-  Result    := _UndoStack[_UndoHead];
-  Dec(_UndoCount);
+  UndoHead := (UndoHead - 1 + STACK_MAX) mod STACK_MAX;
+  Result   := UndoStack[UndoHead];
+  Dec(UndoCount);
 end;
 
 function UndoPeek: TUndoRedoState; inline;
 begin
-  Result := _UndoStack[(_UndoHead - 1 + STACK_MAX) mod STACK_MAX];
+  Result := UndoStack[(UndoHead - 1 + STACK_MAX) mod STACK_MAX];
 end;
 
 procedure RedoPush(const State: TUndoRedoState); inline;
 begin
-  _RedoStack[_RedoHead] := State;
-  _RedoHead  := (_RedoHead + 1) mod STACK_MAX;
-  if _RedoCount < STACK_MAX then Inc(_RedoCount);
+  RedoStack[RedoHead] := State;
+  RedoHead            := (RedoHead + 1) mod STACK_MAX;
+  if RedoCount < STACK_MAX then
+    begin
+    Inc(RedoCount);
+    end;
 end;
 
 function RedoPop: TUndoRedoState; inline;
 begin
-  _RedoHead := (_RedoHead - 1 + STACK_MAX) mod STACK_MAX;
-  Result    := _RedoStack[_RedoHead];
-  Dec(_RedoCount);
+  RedoHead := (RedoHead - 1 + STACK_MAX) mod STACK_MAX;
+  Result   := RedoStack[RedoHead];
+  Dec(RedoCount);
 end;
 
 function CanPush(const NewText: String): Boolean; inline;
 begin
-  if _Suppressed then Exit(False);
-  if (_UndoCount > 0) and (NewText = UndoPeek.Text) then Exit(False);
-  Result := True;
+  Result := (not Suppressed) and ((UndoCount = 0) or (NewText <> UndoPeek.Text));
 end;
 
-procedure SetExpressionState(const Text: String; const SelStart: Integer);
-var
-  State: TUndoRedoState;
+{================ Interface routines ==============}
+
+function MakeUndoRedoState(const Text: String; const SelStart: Integer): TUndoRedoState;
 begin
-  State.Text := Text;
-  State.SelStart := SelStart;
-  UndoPush(State);
-  _RedoCount := 0;
-  _RedoHead  := 0;
+  Result.Text     := Text;
+  Result.SelStart := SelStart;
 end;
 
-procedure RecordExpressionChange(const Text: String; const SelStart: Integer);
-var
-  State: TUndoRedoState;
+procedure SetUndoRedoState(const AState: TUndoRedoState);
 begin
-  if CanPush(Text) then
+  UndoPush(AState);
+  RedoCount := 0;
+  RedoHead  := 0;
+end;
+
+procedure RecordChange(const AState: TUndoRedoState);
+begin
+  if CanPush(AState.Text) then
     begin
-    State.Text := Text;
-    State.SelStart := SelStart;
-    UndoPush(State);
-    _RedoCount := 0;
-    _RedoHead  := 0;
+    SetUndoRedoState(AState);
     end;
 end;
 
 function Undo(out Prev: TUndoRedoState): Boolean;
 begin
-  if _UndoCount < 2 then Exit(False);
-  RedoPush(UndoPop);
-  Prev   := UndoPeek;
-  Result := True;
+  if UndoCount < 2 then
+    begin
+    Result := False;
+    end
+  else
+    begin
+    RedoPush(UndoPop);
+    Prev   := UndoPeek;
+    Result := True;
+    end;
 end;
 
 function Redo(out Next: TUndoRedoState): Boolean;
 begin
-  if _RedoCount = 0 then Exit(False);
-  Next := RedoPop;
-  UndoPush(Next);
-  Result := True;
+  if RedoCount = 0 then
+    begin
+    Result := False;
+    end
+  else
+    begin
+    Next := RedoPop;
+    UndoPush(Next);
+    Result := True;
+    end;
 end;
 
 procedure BeforeMutatingState;
 begin
-  _Suppressed := True;
+  Suppressed := True;
 end;
 
 procedure AfterMutatingState;
 begin
-  _Suppressed := False;
+  Suppressed := False;
 end;
 
 end.
