@@ -16,7 +16,7 @@ uses
   {$R *.res}
 
 const
-  AppWideLockName = 'e045ebf8-d1c3-4572-ad38-64c3105ea46b';
+  AppWideLockName = '58f158a7-f385-43e2-b391-58e3136bec19';
 
 begin
   if AppWideLock.CreateLock(AppWideLockName) then
@@ -30,6 +30,8 @@ begin
     Application.CreateForm(TMainForm, MainFormInstance);
 
     Application.Run;
+
+    MainFormInstance.Free;
 
     Autorun.UnregisterAutoRun(APP_NAME);
     AppWideLock.DropLock;

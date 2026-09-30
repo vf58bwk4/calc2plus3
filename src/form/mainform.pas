@@ -81,6 +81,8 @@ end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
+  Storage.Initialize;
+
   Windows.RegisterHotKey(Handle, HOTKEY_ID, HOT_KEY.ModKey, HOT_KEY.VirtualKey);
 
   Caption       := Application.Title;
@@ -91,14 +93,22 @@ begin
 
   VarName.OnChange    := @VarNameChange;
   Expression.OnChange := @ExpressionChange;
-
-  Storage.InitializeWindowPosDebouncing;
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
 begin
   Windows.UnregisterHotKey(Handle, HOTKEY_ID);
-  Storage.FinalizeWindowPosDebouncing;
+  Application.OnException := nil;
+
+    try
+      begin
+      MainService.Finalize;
+      end;
+    finally
+      begin
+      Storage.Finalize;
+      end;
+    end;
 end;
 
 procedure TMainForm.FormShow(Sender: TObject);

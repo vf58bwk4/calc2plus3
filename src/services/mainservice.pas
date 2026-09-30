@@ -11,6 +11,7 @@ uses
   MainForm;
 
 procedure Initialize(const F: TMainForm);
+procedure Finalize;
 
 procedure CalculateAndUpsertVariable;
 procedure CalculateAndAddVariable;
@@ -192,6 +193,19 @@ begin
     end;
 
   UndoRedoService.SetUndoRedoState(MakeUndoRedoState(_Expression.Text, _Expression.SelStart));
+end;
+
+procedure Finalize;
+begin
+    try
+      begin
+      Storage.SaveWorkspace(_VarName.Text, _Expression.Text, True);
+      end;
+    finally
+      begin
+      Storage.SaveWindowPos(Point(_MainForm.Left, _MainForm.Top), True);
+      end;
+    end;
 end;
 
 procedure CalculateAndUpsertVariable;

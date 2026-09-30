@@ -32,7 +32,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="form;services;utils"/>
+            <OtherUnitFiles Value="form;services;utils;repository"/>
             <UnitOutputDirectory Value="..\lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
@@ -154,15 +154,22 @@
       <Unit>
         <Filename Value="repository\csvstorage.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="CSVStorage"/>
       </Unit>
       <Unit>
         <Filename Value="repository\storage.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="Storage"/>
       </Unit>
       <Unit>
-        <Filename Value="repository\storageinterface.pas"/>
+        <Filename Value="repository\debouncedstorage.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="StorageInterface"/>
+        <UnitName Value="DebouncedStorage"/>
+      </Unit>
+      <Unit>
+        <Filename Value="utils\datadir.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="DataDir"/>
       </Unit>
     </Units>
   </ProjectOptions>
@@ -174,7 +181,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="form;services;utils"/>
+      <OtherUnitFiles Value="form;services;utils;repository"/>
       <UnitOutputDirectory Value="..\lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>
