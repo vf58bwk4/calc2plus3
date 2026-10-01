@@ -24,8 +24,9 @@ var
 
 procedure Initialize(AHistory: TStringGrid);
 begin
-  History                 := AHistory;
-  History.AutoFillColumns := True;
+  History                     := AHistory;
+  History.AutoFillColumns     := True;
+  History.AllowOutboundEvents := False;
 
   Storage.LoadGridFromDataFile(History, HISTORY_FILE);
 

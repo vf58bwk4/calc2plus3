@@ -35,8 +35,9 @@ var
   Row, SkippedCount: Integer;
   Value:             Double;
 begin
-  VarList                 := AVarList;
-  VarList.AutoFillColumns := True;
+  VarList                     := AVarList;
+  VarList.AutoFillColumns     := True;
+  VarList.AllowOutboundEvents := False;
 
   Storage.LoadGridFromDataFile(VarList, VARS_FILE);
 
