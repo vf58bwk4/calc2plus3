@@ -49,13 +49,14 @@ procedure VarNameChange;
 procedure UndoExpression;
 procedure RedoExpression;
 
-procedure SaveWindowPos;
+procedure SaveWindowState;
+procedure SaveWindowVisible(const Visible: Boolean);
 
 
 implementation
 
 uses
-  SysUtils, Windows, Controls, StdCtrls, Grids, Types, Clipbrd, LazUTF8,
+  SysUtils, Windows, Controls, StdCtrls, Grids, Types, Clipbrd, LazUTF8, Forms,
   FormUtils, GridUtils, Storage, AppErrors, Logger, ExprLocale,
   ExprService, DisplayService, HistoryService, VariableService, UndoRedoService;
 
@@ -65,7 +66,17 @@ var
   FocusSet:    Boolean;
   _MainForm:   TMainForm;
 
+  // Changed only by show/hide actions: the form is also hidden while it is destroyed on exit
+  WindowVisible: Boolean;
+
   {================ Private routines ================}
+
+function CurrentWindowState: TMainWindowState;
+begin
+  Result.Left    := _MainForm.Left;
+  Result.Top     := _MainForm.Top;
+  Result.Visible := WindowVisible;
+end;
 
 type
   TValueAction      = procedure(const Value: String);
@@ -135,9 +146,10 @@ end;
 
 procedure Initialize(const AMainForm: TMainForm);
 var
-  WinPos:     TPoint;
-  Workspace:  TWorkspaceState;
-  LoadErrors: String;
+  WindowState: TMainWindowState;
+  WinPos:      TPoint;
+  Workspace:   TWorkspaceState;
+  LoadErrors:  String;
 
   procedure AddLoadError(const E: Exception);
   begin
@@ -152,12 +164,17 @@ begin
   DisplayService.StatusOK;
   LoadErrors := '';
 
-  _MainForm   := AMainForm;
-  _VarName    := AMainForm.VarName;
-  _Expression := AMainForm.Expression;
+  _MainForm     := AMainForm;
+  _VarName      := AMainForm.VarName;
+  _Expression   := AMainForm.Expression;
+  WindowVisible := False;
     try
       begin
-      WinPos         := FormUtils.AdjustWindowPos(Storage.LoadWindowPos, AMainForm.Width, AMainForm.Height);
+      WindowState    := Storage.LoadWindowState;
+      // set before moving the form: OnChangeBounds saves the window state
+      WindowVisible  := WindowState.Visible;
+      WinPos         := FormUtils.AdjustWindowPos(Point(WindowState.Left, WindowState.Top), AMainForm.Width,
+        AMainForm.Height);
       AMainForm.Left := WinPos.X;
       AMainForm.Top  := WinPos.Y;
 
@@ -197,7 +214,10 @@ begin
   if LoadErrors <> '' then
     begin
     DisplayService.StatusError(LoadErrors);
+    // a hidden window would hide the error
+    WindowVisible := True;
     end;
+  Application.ShowMainForm := WindowVisible;
 
   UndoRedoService.CommitState(MakeUndoRedoState(_Expression.Text, _Expression.SelStart));
 end;
@@ -217,12 +237,12 @@ begin
 
     try
       begin
-      Storage.SaveWindowPos(Point(_MainForm.Left, _MainForm.Top), True);
+      Storage.SaveWindowState(CurrentWindowState, True);
       end;
     except
     on E: Exception do
       begin
-      LogError('Could not save window position on exit: ' + E.ClassName + ': ' + E.Message);
+      LogError('Could not save window state on exit: ' + E.ClassName + ': ' + E.Message);
       end;
     end;
 end;
@@ -408,9 +428,15 @@ begin
   UndoRedoService.AfterMutatingState;
 end;
 
-procedure SaveWindowPos;
+procedure SaveWindowState;
 begin
-  Storage.SaveWindowPos(Point(_MainForm.Left, _MainForm.Top));
+  Storage.SaveWindowState(CurrentWindowState);
+end;
+
+procedure SaveWindowVisible(const Visible: Boolean);
+begin
+  WindowVisible := Visible;
+  Storage.SaveWindowState(CurrentWindowState, True);
 end;
 
 end.

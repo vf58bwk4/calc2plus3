@@ -7,12 +7,17 @@ unit Storage;
 interface
 
 uses
-  Types, Grids, Config;
+  Grids, Config;
 
 type
   TWorkspaceState = record
     VarName:    String;
     Expression: String;
+  end;
+
+  TMainWindowState = record
+    Left, Top: Integer;
+    Visible:   Boolean;
   end;
 
   { Applied to every cell: on save from grid to file, on load from file to grid }
@@ -25,8 +30,8 @@ type
     procedure SaveWorkspace(const VarName, Expression: String; const Force: Boolean = False);
     function LoadWorkspace: TWorkspaceState;
 
-    procedure SaveWindowPos(const Pos: TPoint; const Force: Boolean = False);
-    function LoadWindowPos: TPoint;
+    procedure SaveWindowState(const State: TMainWindowState; const Force: Boolean = False);
+    function LoadWindowState: TMainWindowState;
   end;
 
 procedure Initialize;
@@ -38,8 +43,8 @@ procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile; con
 procedure SaveWorkspace(const VarName, Expression: String; const Force: Boolean = False);
 function LoadWorkspace: TWorkspaceState;
 
-procedure SaveWindowPos(const Pos: TPoint; const Force: Boolean = False);
-function LoadWindowPos: TPoint;
+procedure SaveWindowState(const State: TMainWindowState; const Force: Boolean = False);
+function LoadWindowState: TMainWindowState;
 
 implementation
 
@@ -79,14 +84,14 @@ begin
   Result := _Storage.LoadWorkspace;
 end;
 
-procedure SaveWindowPos(const Pos: TPoint; const Force: Boolean);
+procedure SaveWindowState(const State: TMainWindowState; const Force: Boolean);
 begin
-  _Storage.SaveWindowPos(Pos, Force);
+  _Storage.SaveWindowState(State, Force);
 end;
 
-function LoadWindowPos: TPoint;
+function LoadWindowState: TMainWindowState;
 begin
-  Result := _Storage.LoadWindowPos;
+  Result := _Storage.LoadWindowState;
 end;
 
 end.

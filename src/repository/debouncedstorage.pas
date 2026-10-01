@@ -7,21 +7,21 @@ unit DebouncedStorage;
 interface
 
 uses
-  Types, Grids, ExtCtrls, Config, Storage;
+  Grids, ExtCtrls, Config, Storage;
 
 type
   TDebouncedStorage = class(TInterfacedObject, IStorage)
   private
-    FStorage:            IStorage;
-    FDebounceTimer:      TTimer;
-    FPendingWindowPos:   TPoint;
-    FLastSavedWindowPos: TPoint;
-    FPendingWorkspace:   TWorkspaceState;
-    FLastSavedWorkspace: TWorkspaceState;
-    FWorkspaceDirty:     Boolean;
+    FStorage:              IStorage;
+    FDebounceTimer:        TTimer;
+    FPendingWindowState:   TMainWindowState;
+    FLastSavedWindowState: TMainWindowState;
+    FPendingWorkspace:     TWorkspaceState;
+    FLastSavedWorkspace:   TWorkspaceState;
+    FWorkspaceDirty:       Boolean;
 
     procedure DebounceTimerTimer(Sender: TObject);
-    procedure WritePendingWindowPos;
+    procedure WritePendingWindowState;
     procedure WritePendingWorkspace;
   public
     constructor Create(AStorage: IStorage);
@@ -33,8 +33,8 @@ type
     procedure SaveWorkspace(const VarName, Expression: String; const Force: Boolean = False);
     function LoadWorkspace: TWorkspaceState;
 
-    procedure SaveWindowPos(const Pos: TPoint; const Force: Boolean = False);
-    function LoadWindowPos: TPoint;
+    procedure SaveWindowState(const State: TMainWindowState; const Force: Boolean = False);
+    function LoadWindowState: TMainWindowState;
   end;
 
 implementation
@@ -47,13 +47,18 @@ const
 
   {================ Private methods =================}
 
+function SameWindowState(const A, B: TMainWindowState): Boolean; inline;
+begin
+  Result := (A.Left = B.Left) and (A.Top = B.Top) and (A.Visible = B.Visible);
+end;
+
 procedure TDebouncedStorage.DebounceTimerTimer(Sender: TObject);
 begin
   FDebounceTimer.Enabled := False;
 
     try
       begin
-      WritePendingWindowPos;
+      WritePendingWindowState;
       end;
     finally
       begin
@@ -62,13 +67,12 @@ begin
     end;
 end;
 
-procedure TDebouncedStorage.WritePendingWindowPos;
+procedure TDebouncedStorage.WritePendingWindowState;
 begin
-  if (FPendingWindowPos.X <> FLastSavedWindowPos.X) or
-     (FPendingWindowPos.Y <> FLastSavedWindowPos.Y) then
+  if not SameWindowState(FPendingWindowState, FLastSavedWindowState) then
     begin
-    FStorage.SaveWindowPos(FPendingWindowPos);
-    FLastSavedWindowPos := FPendingWindowPos;
+    FStorage.SaveWindowState(FPendingWindowState);
+    FLastSavedWindowState := FPendingWindowState;
     end;
 end;
 
@@ -146,18 +150,18 @@ begin
   FWorkspaceDirty     := False;
 end;
 
-procedure TDebouncedStorage.SaveWindowPos(const Pos: TPoint; const Force: Boolean);
+procedure TDebouncedStorage.SaveWindowState(const State: TMainWindowState; const Force: Boolean);
 begin
   if Force then
     begin
-    FPendingWindowPos := Pos;
-    WritePendingWindowPos;
+    FPendingWindowState := State;
+    WritePendingWindowState;
     end
   else
     begin
-    if (Pos.X <> FPendingWindowPos.X) or (Pos.Y <> FPendingWindowPos.Y) then
+    if not SameWindowState(State, FPendingWindowState) then
       begin
-      FPendingWindowPos := Pos;
+      FPendingWindowState := State;
       if not FDebounceTimer.Enabled then
         begin
         FDebounceTimer.Enabled := True;
@@ -166,12 +170,12 @@ begin
     end;
 end;
 
-function TDebouncedStorage.LoadWindowPos: TPoint;
+function TDebouncedStorage.LoadWindowState: TMainWindowState;
 begin
-  Result := FStorage.LoadWindowPos;
+  Result := FStorage.LoadWindowState;
 
-  FPendingWindowPos   := Result;
-  FLastSavedWindowPos := Result;
+  FPendingWindowState   := Result;
+  FLastSavedWindowState := Result;
 end;
 
 end.

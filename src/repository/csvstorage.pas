@@ -7,7 +7,7 @@ unit CSVStorage;
 interface
 
 uses
-  Types, Grids, Config, Storage;
+  Grids, Config, Storage;
 
 type
   TCSVStorage = class(TInterfacedObject, IStorage)
@@ -18,8 +18,8 @@ type
     procedure SaveWorkspace(const VarName, Expression: String; const Force: Boolean = False);
     function LoadWorkspace: TWorkspaceState;
 
-    procedure SaveWindowPos(const Pos: TPoint; const Force: Boolean = False);
-    function LoadWindowPos: TPoint;
+    procedure SaveWindowState(const State: TMainWindowState; const Force: Boolean = False);
+    function LoadWindowState: TMainWindowState;
   end;
 
 implementation
@@ -43,10 +43,11 @@ const
   = (VarName: 0; Expression: 1);
 
   WINPOS_ROWS: record
-      Left: Byte;
-      Top:  Byte;
+      Left:    Byte;
+      Top:     Byte;
+      Visible: Byte;
       end
-  = (Left: 0; Top: 1);
+  = (Left: 0; Top: 1; Visible: 2);
 
   {================ Private routines ================}
 
@@ -213,17 +214,19 @@ begin
     end;
 end;
 
-procedure TCSVStorage.SaveWindowPos(const Pos: TPoint; const Force: Boolean);
+procedure TCSVStorage.SaveWindowState(const State: TMainWindowState; const Force: Boolean);
 var
   CSV: TCSVDocument;
 begin
   CSV := CreateCSV;
     try
       begin
-      CSV.Cells[CSV_COLS.Key, WINPOS_ROWS.Left]   := 'left';
-      CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Left] := IntToStr(Pos.X);
-      CSV.Cells[CSV_COLS.Key, WINPOS_ROWS.Top]    := 'top';
-      CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Top]  := IntToStr(Pos.Y);
+      CSV.Cells[CSV_COLS.Key, WINPOS_ROWS.Left]      := 'left';
+      CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Left]    := IntToStr(State.Left);
+      CSV.Cells[CSV_COLS.Key, WINPOS_ROWS.Top]       := 'top';
+      CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Top]     := IntToStr(State.Top);
+      CSV.Cells[CSV_COLS.Key, WINPOS_ROWS.Visible]   := 'visible';
+      CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Visible] := BoolToStr(State.Visible, '1', '0');
       WriteDataFile(CSV, WINPOS_FILE);
       end;
     finally
@@ -233,12 +236,14 @@ begin
     end;
 end;
 
-function TCSVStorage.LoadWindowPos: TPoint;
+{ Without a stored state (first start) the window starts hidden }
+function TCSVStorage.LoadWindowState: TMainWindowState;
 var
   CSV: TCSVDocument;
 begin
-  Result.X := 0;
-  Result.Y := 0;
+  Result.Left    := 0;
+  Result.Top     := 0;
+  Result.Visible := False;
 
   CSV := CreateCSV;
     try
@@ -247,11 +252,15 @@ begin
         begin
         if CSV.RowCount > WINPOS_ROWS.Left then
           begin
-          Result.X := StrToIntDef(CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Left], 0);
+          Result.Left := StrToIntDef(CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Left], 0);
           end;
         if CSV.RowCount > WINPOS_ROWS.Top then
           begin
-          Result.Y := StrToIntDef(CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Top], 0);
+          Result.Top := StrToIntDef(CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Top], 0);
+          end;
+        if CSV.RowCount > WINPOS_ROWS.Visible then
+          begin
+          Result.Visible := CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Visible] = '1';
           end;
         end;
       end;
