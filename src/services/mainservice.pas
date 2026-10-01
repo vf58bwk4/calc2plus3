@@ -54,7 +54,7 @@ implementation
 
 uses
   SysUtils, Windows, Controls, StdCtrls, Grids, Types,
-  FormUtils, GridUtils, Storage, AppErrors, Logger,
+  FormUtils, GridUtils, Storage, AppErrors, Logger, ExprLocale,
   ExprService, DisplayService, HistoryService, VariableService, UndoRedoService;
 
 var
@@ -161,7 +161,7 @@ begin
 
       Workspace        := Storage.LoadWorkspace;
       _VarName.Text    := Workspace.VarName;
-      _Expression.Text := Workspace.Expression;
+      _Expression.Text := ExprLocale.ToLocal(Workspace.Expression);
       end;
     except
     on E: Exception do
@@ -204,7 +204,7 @@ procedure Finalize;
 begin
     try
       begin
-      Storage.SaveWorkspace(_VarName.Text, _Expression.Text, True);
+      Storage.SaveWorkspace(_VarName.Text, ExprLocale.ToInvariant(_Expression.Text), True);
       end;
     except
     on E: Exception do
@@ -263,7 +263,7 @@ var
   NewExpression, NewResult: String;
 begin
   NewExpression := _Expression.Text;
-  NewResult     := VariableService.FormatNumber(ExprService.Calculate(NewExpression));
+  NewResult     := ExprLocale.FormatNumber(ExprService.Calculate(NewExpression));
 
   _Expression.Text     := NewResult;
   _Expression.SelStart := Length(NewResult);
@@ -361,12 +361,12 @@ end;
 procedure ExpressionChange;
 begin
   UndoRedoService.RecordChange(MakeUndoRedoState(_Expression.Text, _Expression.SelStart));
-  Storage.SaveWorkspace(_VarName.Text, _Expression.Text);
+  Storage.SaveWorkspace(_VarName.Text, ExprLocale.ToInvariant(_Expression.Text));
 end;
 
 procedure VarNameChange;
 begin
-  Storage.SaveWorkspace(_VarName.Text, _Expression.Text);
+  Storage.SaveWorkspace(_VarName.Text, ExprLocale.ToInvariant(_Expression.Text));
 end;
 
 procedure UndoExpression;

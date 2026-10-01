@@ -183,6 +183,11 @@
         <IsPartOfProject Value="True" />
         <UnitName Value="DataDir" />
       </Unit>
+      <Unit>
+        <Filename Value="utils\exprlocale.pas" />
+        <IsPartOfProject Value="True" />
+        <UnitName Value="ExprLocale" />
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

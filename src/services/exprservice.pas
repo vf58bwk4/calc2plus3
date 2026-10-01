@@ -15,7 +15,7 @@ procedure UpsertVariable(const Name: String; const Value: Double);
 implementation
 
 uses
-  SysUtils, RegExpr, FPExprPars, AppErrors;
+  SysUtils, RegExpr, FPExprPars, AppErrors, ExprLocale;
 
 var
   Parser:      TFPExpressionParser;
@@ -65,7 +65,7 @@ function Calculate(const Expression: String): Double;
 var
   ParserResult: TFPExpressionResult;
 begin
-  Parser.Expression := Expression;
+  Parser.Expression := ExprLocale.ToInvariant(Expression);
   ParserResult      := Parser.Evaluate;
   case ParserResult.ResultType of
     rtInteger:

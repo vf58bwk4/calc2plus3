@@ -12,8 +12,8 @@ uses
 type
   TCSVStorage = class(TInterfacedObject, IStorage)
   public
-    procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
-    procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
+    procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile; const ConvertCell: TCellConverter);
+    procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile; const ConvertCell: TCellConverter);
 
     procedure SaveWorkspace(const VarName, Expression: String; const Force: Boolean = False);
     function LoadWorkspace: TWorkspaceState;
@@ -113,7 +113,7 @@ end;
 
 {================ Interface methods ===============}
 
-procedure TCSVStorage.SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
+procedure TCSVStorage.SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile; const ConvertCell: TCellConverter);
 var
   CSV:      TCSVDocument;
   Row, Col: Integer;
@@ -125,7 +125,7 @@ begin
         begin
         for Col := 0 to Grid.ColCount - Grid.FixedCols - 1 do
           begin
-          CSV.Cells[Col, Row] := Grid.Cells[Grid.FixedCols + Col, Grid.FixedRows + Row];
+          CSV.Cells[Col, Row] := ConvertCell(Grid.Cells[Grid.FixedCols + Col, Grid.FixedRows + Row]);
           end;
         end;
       WriteDataFile(CSV, DataFile);
@@ -137,7 +137,7 @@ begin
     end;
 end;
 
-procedure TCSVStorage.LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
+procedure TCSVStorage.LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile; const ConvertCell: TCellConverter);
 var
   CSV:      TCSVDocument;
   Row, Col: Integer;
@@ -152,7 +152,7 @@ begin
           begin
           for Col := 0 to CSV.ColCount[Row] - 1 do
             begin
-            Grid.Cells[Grid.FixedCols + Col, Grid.FixedRows + Row] := CSV.Cells[Col, Row];
+            Grid.Cells[Grid.FixedCols + Col, Grid.FixedRows + Row] := ConvertCell(CSV.Cells[Col, Row]);
             end;
           end;
         end;
