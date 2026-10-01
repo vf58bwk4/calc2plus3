@@ -59,7 +59,8 @@ type
 
     procedure WMHotKey(var Msg: TMessage); message WM_HOTKEY;
   private
-    procedure ShowNormalWindow;
+    procedure ShowMainWindow;
+    procedure HideMainWindow;
     procedure ApplicationException(Sender: TObject; E: Exception);
     procedure ExpressionPaste(Sender: TObject);
   end;
@@ -91,10 +92,17 @@ begin
     end;
 end;
 
-procedure TMainForm.ShowNormalWindow; inline;
+procedure TMainForm.ShowMainWindow;
 begin
   WindowState := wsNormal;
   Show;
+  MainService.SaveWindowVisible(True);
+end;
+
+procedure TMainForm.HideMainWindow;
+begin
+  Hide;
+  MainService.SaveWindowVisible(False);
 end;
 
 procedure TMainForm.ApplicationException(Sender: TObject; E: Exception);
@@ -154,6 +162,7 @@ begin
     Application.ProcessMessages;
     end;
   CloseAction := caHide;
+  MainService.SaveWindowVisible(False);
 end;
 
 procedure TMainForm.TrayIconMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
@@ -164,7 +173,7 @@ begin
     end;
   if Button = mbLeft then
     begin
-    ShowNormalWindow;
+    ShowMainWindow;
     end;
 end;
 
@@ -181,16 +190,16 @@ begin
       begin
       if not IsForegroundWindow(Self) then
         begin
-        ShowNormalWindow;
+        ShowMainWindow;
         end
       else
         begin
-        Hide;
+        HideMainWindow;
         end;
       end
     else
       begin
-      ShowNormalWindow;
+      ShowMainWindow;
       end;
     end;
 end;
@@ -217,7 +226,7 @@ end;
 
 procedure TMainForm.FormChangeBounds(Sender: TObject);
 begin
-  MainService.SaveWindowPos;
+  MainService.SaveWindowState;
 end;
 
 procedure TMainForm.VarNameKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -274,7 +283,7 @@ begin
     begin
     if IsEditEmpty(Expression) then
       begin
-      Hide;
+      HideMainWindow;
       end
     else if IsAllEditTextSelected(Expression) then
         begin
