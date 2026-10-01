@@ -23,12 +23,13 @@
     </General>
     <VersionInfo>
       <UseVersionInfo Value="True" />
-      <MajorVersionNr Value="1" />
+      <MajorVersionNr Value="2" />
       <Language Value="0409" />
       <CharSet Value="04B0" />
-      <StringTable CompanyName="vf58bwk4" FileDescription="2 + 3 calculator" InternalName="calc2plus3"
-        LegalCopyright="Copyright (c) 2025 vf58bwk4" OriginalFilename="calc2plus3.exe"
-        ProductName="2 + 3" ProductVersion="1.0.0.0" />
+      <StringTable CompanyName="vf58bwk4" FileDescription="2 + 3 calculator"
+        InternalName="calc2plus3"
+        LegalCopyright="Copyright (c) 2025-2026 vf58bwk4" OriginalFilename="calc2plus3.exe"
+        ProductName="2 + 3" ProductVersion="2.0.0.0" />
     </VersionInfo>
     <BuildModes>
       <Item Name="Release" Default="True" />
@@ -42,28 +43,33 @@
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)" />
             <OtherUnitFiles Value="form;services;utils;repository" />
-            <UnitOutputDirectory Value="..\lib\$(TargetCPU)-$(TargetOS)" />
+            <UnitOutputDirectory Value="..\lib\$(TargetCPU)-$(TargetOS)-debug" />
           </SearchPaths>
           <Parsing>
             <SyntaxOptions>
               <CStyleOperator Value="False" />
+              <IncludeAssertionCode Value="True" />
               <AllowLabel Value="False" />
             </SyntaxOptions>
           </Parsing>
           <CodeGeneration>
-            <SmartLinkUnit Value="True" />
-            <TargetCPU Value="i386" />
-            <TargetOS Value="win32" />
+            <Checks>
+              <IOChecks Value="True" />
+              <RangeChecks Value="True" />
+              <OverflowChecks Value="True" />
+              <StackChecks Value="True" />
+            </Checks>
+            <VerifyObjMethodCallValidity Value="True" />
+            <TargetCPU Value="x86_64" />
+            <TargetOS Value="win64" />
             <Optimizations>
-              <OptimizationLevel Value="2" />
+              <OptimizationLevel Value="0" />
             </Optimizations>
-            <SmallerCode Value="True" />
           </CodeGeneration>
           <Linking>
             <Debugging>
-              <GenerateDebugInfo Value="False" />
-              <RunWithoutDebug Value="True" />
               <DebugInfoType Value="dsDwarf3" />
+              <TrashVariables Value="True" />
             </Debugging>
             <Options>
               <Win32>
