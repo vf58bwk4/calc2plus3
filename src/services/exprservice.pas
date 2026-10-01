@@ -1,6 +1,6 @@
 unit ExprService;
 
-{$mode objfpc}
+{$mode ObjFPC}
 {$modeswitch nestedprocvars}
 {$H+}
 {$inline ON}

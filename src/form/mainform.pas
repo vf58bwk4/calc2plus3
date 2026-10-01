@@ -39,7 +39,7 @@ type
     procedure VarNameKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure HistoryKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure HistoryDblClick(Sender: TObject);
-    procedure VariableListKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure VarListKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure VarListDblClick(Sender: TObject);
 
     procedure GridMouseWheelDown(Sender: TObject; Shift: TShiftState; MousePos: TPoint; var Handled: Boolean);
@@ -48,10 +48,10 @@ type
     procedure TrayIconMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure MenuItemCloseClick(Sender: TObject);
 
-    procedure WMHotKey(var Msg: TMessage); Message WM_HOTKEY;
-  Private
+    procedure WMHotKey(var Msg: TMessage); message WM_HOTKEY;
+  private
     procedure ShowNormalWindow;
-    procedure AppExceptionHandler(Sender: TObject; E: Exception);
+    procedure ApplicationException(Sender: TObject; E: Exception);
   end;
 
 var
@@ -66,7 +66,7 @@ uses
   Storage, DisplayService, Types, Dialogs;
 
 const
-  HOTKEY_ID = 1;
+  HOT_KEY_ID = 1;
 
 procedure TMainForm.ShowNormalWindow; inline;
 begin
@@ -74,7 +74,7 @@ begin
   Show;
 end;
 
-procedure TMainForm.AppExceptionHandler(Sender: TObject; E: Exception);
+procedure TMainForm.ApplicationException(Sender: TObject; E: Exception);
 begin
   DisplayService.StatusError(E.Message);
 end;
@@ -83,13 +83,13 @@ procedure TMainForm.FormCreate(Sender: TObject);
 begin
   Storage.Initialize;
 
-  Windows.RegisterHotKey(Handle, HOTKEY_ID, HOT_KEY.ModKey, HOT_KEY.VirtualKey);
+  Windows.RegisterHotKey(Handle, HOT_KEY_ID, HOT_KEY.Modifiers, HOT_KEY.VirtualKey);
 
   Caption       := Application.Title;
   TrayIcon.Hint := Application.Title;
 
-  MainService.Initialize(self);
-  Application.OnException := @AppExceptionHandler;
+  MainService.Initialize(Self);
+  Application.OnException := @ApplicationException;
 
   VarName.OnChange    := @VarNameChange;
   Expression.OnChange := @ExpressionChange;
@@ -97,7 +97,7 @@ end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
 begin
-  Windows.UnregisterHotKey(Handle, HOTKEY_ID);
+  Windows.UnregisterHotKey(Handle, HOT_KEY_ID);
   Application.OnException := nil;
 
     try
@@ -113,7 +113,7 @@ end;
 
 procedure TMainForm.FormShow(Sender: TObject);
 begin
-  MainService.SetFocus;
+  MainService.SetInitialFocus;
 end;
 
 procedure TMainForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -144,11 +144,11 @@ end;
 
 procedure TMainForm.WMHotKey(var Msg: TMessage);
 begin
-  if Msg.wParam = HOTKEY_ID then
+  if Msg.wParam = HOT_KEY_ID then
     begin
     if Visible then
       begin
-      if not IsTopMostWindow(self) then
+      if not IsForegroundWindow(Self) then
         begin
         ShowNormalWindow;
         end
@@ -221,7 +221,7 @@ begin
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_BACK], [ssCtrl]) then
     begin
-    MainService.DoCtrlBackspace;
+    MainService.DeleteWordLeft;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssCtrl]) then
     begin
@@ -237,7 +237,7 @@ begin
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], []) then
     begin
-    MainService.CalculateAndInsertInHistory;
+    MainService.CalculateAndAppendToHistory;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_ESCAPE], []) then
     begin
@@ -245,9 +245,9 @@ begin
       begin
       Hide;
       end
-    else if IsEditTextSelected(Expression) then
+    else if IsAllEditTextSelected(Expression) then
         begin
-        MainService.DoCtrlBackspace;
+        MainService.DeleteWordLeft;
         end
       else
         begin
@@ -274,21 +274,21 @@ var
 begin
   Mods := KeyboardStateToShiftState;
 
-  if CheckModsState(Mods, []) then
+  if IsModsStateMatch(Mods, []) then
     begin
     MainService.CopyFromHistoryToExpressionOnClick;
     end;
-  if CheckModsState(Mods, [ssCtrl]) then
+  if IsModsStateMatch(Mods, [ssCtrl]) then
     begin
     MainService.ReplaceExpressionFromHistoryOnClick;
     end;
-  if CheckModsState(Mods, [ssCtrl, ssAlt]) then
+  if IsModsStateMatch(Mods, [ssCtrl, ssAlt]) then
     begin
     MainService.RemoveHistoryItem;
     end;
 end;
 
-procedure TMainForm.VariableListKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+procedure TMainForm.VarListKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssCtrl]) then
     begin
@@ -310,21 +310,21 @@ var
 begin
   Mods := KeyboardStateToShiftState;
 
-  if CheckModsState(Mods, []) then
+  if IsModsStateMatch(Mods, []) then
     begin
     MainService.CopyFromVarListToExpressionOnClick;
     end;
-  if CheckModsState(Mods, [ssCtrl]) then
+  if IsModsStateMatch(Mods, [ssCtrl]) then
     begin
     MainService.ReplaceExpressionFromVarListOnClick;
     end;
-  if CheckModsState(Mods, [ssShift]) then
+  if IsModsStateMatch(Mods, [ssShift]) then
     begin
     MainService.ReplaceVarNameFromVarListOnClick;
     end;
-  if CheckModsState(Mods, [ssCtrl, ssAlt]) then
+  if IsModsStateMatch(Mods, [ssCtrl, ssAlt]) then
     begin
-    MainService.RemoveVariable;
+    MainService.RemoveVarListItem;
     end;
 end;
 

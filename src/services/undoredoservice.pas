@@ -14,8 +14,8 @@ type
 
 function MakeUndoRedoState(const Text: String; const SelStart: Integer): TUndoRedoState;
 
-procedure SetUndoRedoState(const AState: TUndoRedoState);
-procedure RecordChange(const AState: TUndoRedoState);
+procedure CommitState(const State: TUndoRedoState);
+procedure RecordChange(const State: TUndoRedoState);
 
 function Undo(out Prev: TUndoRedoState): Boolean;
 function Redo(out Next: TUndoRedoState): Boolean;
@@ -26,11 +26,11 @@ procedure AfterMutatingState;
 implementation
 
 const
-  STACK_MAX = 100;
+  STACK_SIZE = 100;
 
 var
-  UndoStack:  array[0..STACK_MAX - 1] of TUndoRedoState;
-  RedoStack:  array[0..STACK_MAX - 1] of TUndoRedoState;
+  UndoStack:  array[0..STACK_SIZE - 1] of TUndoRedoState;
+  RedoStack:  array[0..STACK_SIZE - 1] of TUndoRedoState;
   UndoHead:   Integer;
   UndoCount:  Integer;
   RedoHead:   Integer;
@@ -42,8 +42,8 @@ var
 procedure UndoPush(const State: TUndoRedoState); inline;
 begin
   UndoStack[UndoHead] := State;
-  UndoHead            := (UndoHead + 1) mod STACK_MAX;
-  if UndoCount < STACK_MAX then
+  UndoHead            := (UndoHead + 1) mod STACK_SIZE;
+  if UndoCount < STACK_SIZE then
     begin
     Inc(UndoCount);
     end;
@@ -51,21 +51,21 @@ end;
 
 function UndoPop: TUndoRedoState; inline;
 begin
-  UndoHead := (UndoHead - 1 + STACK_MAX) mod STACK_MAX;
+  UndoHead := (UndoHead - 1 + STACK_SIZE) mod STACK_SIZE;
   Result   := UndoStack[UndoHead];
   Dec(UndoCount);
 end;
 
 function UndoPeek: TUndoRedoState; inline;
 begin
-  Result := UndoStack[(UndoHead - 1 + STACK_MAX) mod STACK_MAX];
+  Result := UndoStack[(UndoHead - 1 + STACK_SIZE) mod STACK_SIZE];
 end;
 
 procedure RedoPush(const State: TUndoRedoState); inline;
 begin
   RedoStack[RedoHead] := State;
-  RedoHead            := (RedoHead + 1) mod STACK_MAX;
-  if RedoCount < STACK_MAX then
+  RedoHead            := (RedoHead + 1) mod STACK_SIZE;
+  if RedoCount < STACK_SIZE then
     begin
     Inc(RedoCount);
     end;
@@ -73,7 +73,7 @@ end;
 
 function RedoPop: TUndoRedoState; inline;
 begin
-  RedoHead := (RedoHead - 1 + STACK_MAX) mod STACK_MAX;
+  RedoHead := (RedoHead - 1 + STACK_SIZE) mod STACK_SIZE;
   Result   := RedoStack[RedoHead];
   Dec(RedoCount);
 end;
@@ -91,18 +91,18 @@ begin
   Result.SelStart := SelStart;
 end;
 
-procedure SetUndoRedoState(const AState: TUndoRedoState);
+procedure CommitState(const State: TUndoRedoState);
 begin
-  UndoPush(AState);
+  UndoPush(State);
   RedoCount := 0;
   RedoHead  := 0;
 end;
 
-procedure RecordChange(const AState: TUndoRedoState);
+procedure RecordChange(const State: TUndoRedoState);
 begin
-  if CanPush(AState.Text) then
+  if CanPush(State.Text) then
     begin
-    SetUndoRedoState(AState);
+    CommitState(State);
     end;
 end;
 

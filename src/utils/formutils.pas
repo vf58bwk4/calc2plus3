@@ -1,6 +1,6 @@
 unit FormUtils;
 
-{$mode objfpc}
+{$mode ObjFPC}
 {$modeswitch nestedprocvars}
 {$H+}
 {$inline ON}
@@ -11,24 +11,24 @@ uses
   Classes, Types, StdCtrls, Forms;
 
 type
-  TVK_KeyCode    = 0..254;
-  TVK_KeyCodeSet = set of TVK_KeyCode;
+  TVirtualKey    = 0..254;
+  TVirtualKeySet = set of TVirtualKey;
 
-function IsTopMostWindow(const AForm: TForm): Boolean;
+function IsForegroundWindow(const Form: TForm): Boolean;
 
-function IsKeyCombinationMatch(var Key: Word; const Mods: TShiftState; const ExpectedKeys: TVK_KeyCodeSet; const ExpectedMods: TShiftState): Boolean;
-function CheckModsState(const Mods, ExpectedMods: TShiftState): Boolean;
+function IsKeyCombinationMatch(var Key: Word; const Mods: TShiftState; const ExpectedKeys: TVirtualKeySet; const ExpectedMods: TShiftState): Boolean;
+function IsModsStateMatch(const Mods, ExpectedMods: TShiftState): Boolean;
 
 procedure SetEditWordBreakCallback(Edit: TEdit);
 
 procedure SetEditMargins(Edit: TEdit; const LeftPad, RightPad: Integer);
-procedure SetEditCuebanner(Edit: TEdit; const Cuebanner: String);
+procedure SetEditCueBanner(Edit: TEdit; const CueBanner: String);
 
 function IsEditEmpty(Edit: TEdit): Boolean;
-function IsEditTextSelected(Edit: TEdit): Boolean;
+function IsAllEditTextSelected(Edit: TEdit): Boolean;
 procedure SelectAllEditText(Edit: TEdit);
 
-procedure DoCtrlBackspace(Edit: TEdit);
+procedure DeleteWordLeft(Edit: TEdit);
 
 function AdjustWindowPos(const Pos: TPoint; const W, H: Integer): TPoint;
 
@@ -43,21 +43,21 @@ const
 
   EXPRESSION_DELIMITERS = [' ', #9, #10, #13, '+', '-', '*', '/', '^', '(', ')', ',', '$', '%', '&'];
 
-function IsTopMostWindow(const AForm: TForm): Boolean; inline;
+function IsForegroundWindow(const Form: TForm): Boolean; inline;
 begin
-  Result := (GetForegroundWindow = AForm.Handle);
+  Result := (GetForegroundWindow = Form.Handle);
 end;
 
-function IsKeyCombinationMatch(var Key: Word; const Mods: TShiftState; const ExpectedKeys: TVK_KeyCodeSet; const ExpectedMods: TShiftState): Boolean;
+function IsKeyCombinationMatch(var Key: Word; const Mods: TShiftState; const ExpectedKeys: TVirtualKeySet; const ExpectedMods: TShiftState): Boolean;
 begin
-  Result := (Key in ExpectedKeys) and CheckModsState(Mods, ExpectedMods);
+  Result := (Key in ExpectedKeys) and IsModsStateMatch(Mods, ExpectedMods);
   if Result then
     begin
     Key := 0;
     end;
 end;
 
-function CheckModsState(const Mods, ExpectedMods: TShiftState): Boolean;
+function IsModsStateMatch(const Mods, ExpectedMods: TShiftState): Boolean;
 const
   SHIFTSTATES_ALL: TShiftState = [Low(TShiftStateEnum)..High(TShiftStateEnum)];
 var
@@ -68,7 +68,7 @@ begin
 end;
 
 
-procedure SkipDelimitersLeft(const Text: Pwidechar; const TextLength: Integer; var CurrentPosition: Integer);
+procedure SkipDelimitersLeft(const Text: PWideChar; const TextLength: Integer; var CurrentPosition: Integer);
 begin
   while (0 <= CurrentPosition) and (CurrentPosition < TextLength) and (Text[CurrentPosition] in EXPRESSION_DELIMITERS) do
     begin
@@ -76,7 +76,7 @@ begin
     end;
 end;
 
-procedure SkipNonDelimitersLeft(const Text: Pwidechar; const TextLength: Integer; var CurrentPosition: Integer);
+procedure SkipNonDelimitersLeft(const Text: PWideChar; const TextLength: Integer; var CurrentPosition: Integer);
 begin
   while (0 <= CurrentPosition) and (CurrentPosition < TextLength) and not (Text[CurrentPosition] in EXPRESSION_DELIMITERS) do
     begin
@@ -84,7 +84,7 @@ begin
     end;
 end;
 
-procedure SkipDelimitersRight(const Text: Pwidechar; const TextLength: Integer; var CurrentPosition: Integer);
+procedure SkipDelimitersRight(const Text: PWideChar; const TextLength: Integer; var CurrentPosition: Integer);
 begin
   while (0 <= CurrentPosition) and (CurrentPosition < TextLength) and (Text[CurrentPosition] in EXPRESSION_DELIMITERS) do
     begin
@@ -92,7 +92,7 @@ begin
     end;
 end;
 
-procedure SkipNonDelimitersRight(const Text: Pwidechar; const TextLength: Integer; var CurrentPosition: Integer);
+procedure SkipNonDelimitersRight(const Text: PWideChar; const TextLength: Integer; var CurrentPosition: Integer);
 begin
   while (0 <= CurrentPosition) and (CurrentPosition < TextLength) and not (Text[CurrentPosition] in EXPRESSION_DELIMITERS) do
     begin
@@ -101,12 +101,12 @@ begin
 end;
 
 type
-  TWordBreakState = (WBS_CLEAR, WBS_SKIPRIGHT);
+  TWordBreakState = (wbsClear, wbsSkipRight);
 
 var
   WordBreakState: TWordBreakState;
 
-function EditWordBreakProc(Text: Pwidechar; CurrentPosition: Integer; TextLength: Integer; BreakCode: Integer): Integer; Stdcall;
+function EditWordBreakProc(Text: PWideChar; CurrentPosition: Integer; TextLength: Integer; BreakCode: Integer): Integer; stdcall;
 begin
   case BreakCode of
     WB_LEFT:
@@ -124,15 +124,15 @@ begin
       end;
     WB_ISDELIMITER:
       begin
-      WordBreakState := WBS_SKIPRIGHT;
+      WordBreakState := wbsSkipRight;
       Result         := 1; // 0: LEFT + RIGHT, 1: RIGHT + RIGHT
       end;
     WB_RIGHT:
       begin
       case WordBreakState of
-        WBS_SKIPRIGHT:
+        wbsSkipRight:
           begin
-          WordBreakState := WBS_CLEAR;
+          WordBreakState := wbsClear;
           Result         := CurrentPosition;
           end;
         else
@@ -159,10 +159,10 @@ end;
 
 procedure SetEditWordBreakCallback(Edit: TEdit); inline;
 begin
-  WordBreakState := WBS_CLEAR;
+  WordBreakState := wbsClear;
   if Edit <> nil then
     begin
-    SendMessage(Edit.Handle, EM_SETWORDBREAKPROC, 0, LParam(@EditWordBreakProc));
+    SendMessage(Edit.Handle, EM_SETWORDBREAKPROC, 0, LPARAM(@EditWordBreakProc));
     end;
 end;
 
@@ -170,15 +170,15 @@ procedure SetEditMargins(Edit: TEdit; const LeftPad, RightPad: Integer); inline;
 begin
   if Edit <> nil then
     begin
-    SendMessage(Edit.Handle, EM_SETMARGINS, EC_LEFTMARGIN or EC_RIGHTMARGIN, MakeLong(LeftPad, RightPad));
+    SendMessage(Edit.Handle, EM_SETMARGINS, EC_LEFTMARGIN or EC_RIGHTMARGIN, MAKELONG(LeftPad, RightPad));
     end;
 end;
 
-procedure SetEditCuebanner(Edit: TEdit; const Cuebanner: String); inline;
+procedure SetEditCueBanner(Edit: TEdit; const CueBanner: String); inline;
 begin
   if Edit <> nil then
     begin
-    SendMessage(Edit.Handle, EM_SETCUEBANNER, 0, LParam(Pwidechar(WideString(Cuebanner))));
+    SendMessage(Edit.Handle, EM_SETCUEBANNER, 0, LPARAM(PWideChar(WideString(CueBanner))));
     end;
 end;
 
@@ -187,7 +187,7 @@ begin
   Result := (Edit = nil) or (Trim(Edit.Text) = '');
 end;
 
-function IsEditTextSelected(Edit: TEdit): Boolean; inline;
+function IsAllEditTextSelected(Edit: TEdit): Boolean; inline;
 begin
   Result := (Edit <> nil) and (Edit.SelLength = Length(Edit.Text));
 end;
@@ -200,7 +200,7 @@ begin
     end;
 end;
 
-procedure DoCtrlBackspace(Edit: TEdit);
+procedure DeleteWordLeft(Edit: TEdit);
 var
   Text:             String;
   InitIdx, CurrIdx: Integer;

@@ -10,13 +10,13 @@ interface
 uses
   MainForm;
 
-procedure Initialize(const F: TMainForm);
+procedure Initialize(const AMainForm: TMainForm);
 procedure Finalize;
 
 procedure CalculateAndUpsertVariable;
 procedure CalculateAndAddVariable;
 procedure CalculateAndSubtractVariable;
-procedure CalculateAndInsertInHistory;
+procedure CalculateAndAppendToHistory;
 
 procedure CopyFromHistoryToExpressionOnClick;
 procedure CopyFromHistoryToExpressionOnKey;
@@ -33,13 +33,13 @@ procedure ReplaceExpressionFromVarListOnKey;
 procedure ReplaceVarNameFromVarListOnClick;
 procedure ReplaceVarNameFromVarListOnKey;
 
-procedure DoCtrlBackspace;
+procedure DeleteWordLeft;
 procedure ClearVarName;
 
-procedure RemoveVariable;
+procedure RemoveVarListItem;
 procedure RemoveHistoryItem;
 
-procedure SetFocus;
+procedure SetInitialFocus;
 
 procedure ExpressionChange;
 procedure VarNameChange;
@@ -67,8 +67,8 @@ var
 
 type
   TValueAction      = procedure(const Value: String);
-  TGridValueContext = (vcSingleColumnGrid = 1, vcTwoColumnsGrid = 2);
-  TGridValueGetter  = function(const Grid: TStringGrid; const Context: Integer): String;
+  TGridValueContext = (gvcSingleColumnGrid = 1, gvcTwoColumnsGrid = 2);
+  TGridValueGetter  = function(const Grid: TStringGrid; const MaxCol: Integer): String;
 
 procedure ExecuteActionFromGrid(Action: TValueAction; ValueGetter: TGridValueGetter; Context: TGridValueContext; Grid: TStringGrid);
 begin
@@ -110,16 +110,15 @@ end;
 
 procedure ReplaceVarName(const Value: String);
 begin
-  _VarName.Text      := Value;
-  _VarName.SelStart  := 1;
-  _VarName.SelLength := Length(Value);
+  _VarName.Text := Value;
+  _VarName.SelectAll;
   _VarName.SetFocus;
 end;
 
 type
   TValueUpdater = function(const OldValue, NewValue: Double): Double is nested;
 
-procedure CalculateAndModifyVariable(const OpFunc: TValueUpdater);
+procedure CalculateAndModifyVariable(const ValueUpdater: TValueUpdater);
 var
   VarName:  String;
   VarValue: Double;
@@ -131,7 +130,7 @@ begin
 
       VarValue := ExprService.Calculate(_Expression.Text);
 
-      VariableService.ModifyVariable(VarName, OpFunc(VariableService.GetValue(VarName), VarValue));
+      VariableService.UpsertItem(VarName, ValueUpdater(VariableService.GetValue(VarName), VarValue));
 
       DisplayService.StatusOK;
       end
@@ -145,26 +144,26 @@ end;
 
 {================ Interface routines ==============}
 
-procedure Initialize(const F: TMainForm);
+procedure Initialize(const AMainForm: TMainForm);
 var
-  WP: TPoint;
-  WS: TWorkspaceState;
+  WinPos:    TPoint;
+  Workspace: TWorkspaceState;
 begin
-  DisplayService.Initialize(F.StatusBar);
+  DisplayService.Initialize(AMainForm.StatusBar);
   DisplayService.StatusOK;
 
-  _MainForm   := F;
-  _VarName    := F.VarName;
-  _Expression := F.Expression;
+  _MainForm   := AMainForm;
+  _VarName    := AMainForm.VarName;
+  _Expression := AMainForm.Expression;
     try
       begin
-      WP     := FormUtils.AdjustWindowPos(Storage.LoadWindowPos, F.Width, F.Height);
-      F.Left := WP.X;
-      F.Top  := WP.Y;
+      WinPos         := FormUtils.AdjustWindowPos(Storage.LoadWindowPos, AMainForm.Width, AMainForm.Height);
+      AMainForm.Left := WinPos.X;
+      AMainForm.Top  := WinPos.Y;
 
-      WS               := Storage.LoadWorkspace;
-      _VarName.Text    := WS.VarName;
-      _Expression.Text := WS.Expression;
+      Workspace        := Storage.LoadWorkspace;
+      _VarName.Text    := Workspace.VarName;
+      _Expression.Text := Workspace.Expression;
       end;
     except
       begin
@@ -174,7 +173,7 @@ begin
 
     try
       begin
-      VariableService.Initialize(F.VarList);
+      VariableService.Initialize(AMainForm.VarList);
       end;
     except
       begin
@@ -184,7 +183,7 @@ begin
 
     try
       begin
-      HistoryService.Initialize(F.History);
+      HistoryService.Initialize(AMainForm.History);
       end;
     except
       begin
@@ -192,7 +191,7 @@ begin
       end;
     end;
 
-  UndoRedoService.SetUndoRedoState(MakeUndoRedoState(_Expression.Text, _Expression.SelStart));
+  UndoRedoService.CommitState(MakeUndoRedoState(_Expression.Text, _Expression.SelStart));
 end;
 
 procedure Finalize;
@@ -210,9 +209,9 @@ end;
 
 procedure CalculateAndUpsertVariable;
 
-  function Updater(const OldVal, NewVal: Double): Double;
+  function Updater(const OldValue, NewValue: Double): Double;
   begin
-    Result := NewVal;
+    Result := NewValue;
   end;
 
 begin
@@ -221,9 +220,9 @@ end;
 
 procedure CalculateAndAddVariable;
 
-  function Updater(const OldVal, NewVal: Double): Double;
+  function Updater(const OldValue, NewValue: Double): Double;
   begin
-    Result := OldVal + NewVal;
+    Result := OldValue + NewValue;
   end;
 
 begin
@@ -232,16 +231,16 @@ end;
 
 procedure CalculateAndSubtractVariable;
 
-  function Updater(const OldVal, NewVal: Double): Double;
+  function Updater(const OldValue, NewValue: Double): Double;
   begin
-    Result := OldVal - NewVal;
+    Result := OldValue - NewValue;
   end;
 
 begin
   CalculateAndModifyVariable(@Updater);
 end;
 
-procedure CalculateAndInsertInHistory;
+procedure CalculateAndAppendToHistory;
 var
   NewExpression, NewResult: String;
 begin
@@ -253,7 +252,7 @@ begin
       _Expression.Text     := NewResult;
       _Expression.SelStart := Length(NewResult);
 
-      HistoryService.InsertItem(NewResult, NewExpression);
+      HistoryService.AppendItem(NewResult, NewExpression);
 
       DisplayService.StatusOK;
       end
@@ -267,57 +266,57 @@ end;
 
 procedure CopyFromHistoryToExpressionOnClick;
 begin
-  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.GetClickedCellValue, vcTwoColumnsGrid, HistoryService.Grid);
+  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.GetClickedCellValue, gvcTwoColumnsGrid, HistoryService.Grid);
 end;
 
 procedure CopyFromHistoryToExpressionOnKey;
 begin
-  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.GetKeyDownCellValue, vcTwoColumnsGrid, HistoryService.Grid);
+  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.GetKeyDownCellValue, gvcTwoColumnsGrid, HistoryService.Grid);
 end;
 
 procedure ReplaceExpressionFromHistoryOnClick;
 begin
-  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.GetClickedCellValue, vcTwoColumnsGrid, HistoryService.Grid);
+  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.GetClickedCellValue, gvcTwoColumnsGrid, HistoryService.Grid);
 end;
 
 procedure ReplaceExpressionFromHistoryOnKey;
 begin
-  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.GetKeyDownCellValue, vcTwoColumnsGrid, HistoryService.Grid);
+  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.GetKeyDownCellValue, gvcTwoColumnsGrid, HistoryService.Grid);
 end;
 
 procedure CopyFromVarListToExpressionOnKey;
 begin
-  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.GetKeyDownCellValue, vcTwoColumnsGrid, VariableService.Grid);
+  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.GetKeyDownCellValue, gvcTwoColumnsGrid, VariableService.Grid);
 end;
 
 procedure CopyFromVarListToExpressionOnClick;
 begin
-  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.GetClickedCellValue, vcTwoColumnsGrid, VariableService.Grid);
+  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.GetClickedCellValue, gvcTwoColumnsGrid, VariableService.Grid);
 end;
 
 procedure ReplaceExpressionFromVarListOnClick;
 begin
-  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.GetClickedCellValue, vcTwoColumnsGrid, VariableService.Grid);
+  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.GetClickedCellValue, gvcTwoColumnsGrid, VariableService.Grid);
 end;
 
 procedure ReplaceExpressionFromVarListOnKey;
 begin
-  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.GetKeyDownCellValue, vcTwoColumnsGrid, VariableService.Grid);
+  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.GetKeyDownCellValue, gvcTwoColumnsGrid, VariableService.Grid);
 end;
 
 procedure ReplaceVarNameFromVarListOnClick;
 begin
-  ExecuteActionFromGrid(@ReplaceVarName, @GridUtils.GetClickedCellValue, vcSingleColumnGrid, VariableService.Grid);
+  ExecuteActionFromGrid(@ReplaceVarName, @GridUtils.GetClickedCellValue, gvcSingleColumnGrid, VariableService.Grid);
 end;
 
 procedure ReplaceVarNameFromVarListOnKey;
 begin
-  ExecuteActionFromGrid(@ReplaceVarName, @GridUtils.GetKeyDownCellValue, vcSingleColumnGrid, VariableService.Grid);
+  ExecuteActionFromGrid(@ReplaceVarName, @GridUtils.GetKeyDownCellValue, gvcSingleColumnGrid, VariableService.Grid);
 end;
 
-procedure DoCtrlBackspace;
+procedure DeleteWordLeft;
 begin
-  FormUtils.DoCtrlBackspace(_Expression);
+  FormUtils.DeleteWordLeft(_Expression);
 end;
 
 procedure ClearVarName;
@@ -325,7 +324,7 @@ begin
   _VarName.Clear;
 end;
 
-procedure RemoveVariable;
+procedure RemoveVarListItem;
 begin
   VariableService.RemoveItem;
   DisplayService.StatusOK;
@@ -337,7 +336,7 @@ begin
   DisplayService.StatusOK;
 end;
 
-procedure SetFocus;
+procedure SetInitialFocus;
 begin
   if not FocusSet then
     begin

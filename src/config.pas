@@ -16,7 +16,7 @@ type
   end;
 
   THotKey = record
-    ModKey, VirtualKey: UINT;
+    Modifiers, VirtualKey: UINT;
   end;
 
 const
@@ -29,7 +29,7 @@ const
   WORKSPACE_FILE: TDataFile = (Dirname: DATA_DIR; Filename: 'workspace.2p3');
   WINPOS_FILE: TDataFile    = (Dirname: DATA_DIR; Filename: 'winpos.2p3');
 
-  HOT_KEY: THotKey = (ModKey: MOD_ALT; VirtualKey: VK_K);
+  HOT_KEY: THotKey = (Modifiers: MOD_ALT; VirtualKey: VK_K);
 
 implementation
 

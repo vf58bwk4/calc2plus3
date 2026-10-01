@@ -11,7 +11,7 @@ uses
 
 procedure Initialize(AVarList: TStringGrid);
 function FormatNumber(const Value: Double): String;
-procedure ModifyVariable(const VarName: String; const NewValue: Double);
+procedure UpsertItem(const VarName: String; const NewValue: Double);
 procedure RemoveItem;
 function GetValue(const VarName: String): Double;
 function Grid: TStringGrid;
@@ -53,7 +53,7 @@ begin
     end;
 end;
 
-procedure ModifyVariable(const VarName: String; const NewValue: Double);
+procedure UpsertItem(const VarName: String; const NewValue: Double);
 var
   VarFound:     Boolean;
   DeleteRowIdx: Integer;

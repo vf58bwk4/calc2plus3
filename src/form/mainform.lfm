@@ -113,7 +113,7 @@ object MainForm: TMainForm
     TabOrder = 3
     TabStop = False
     OnDblClick = VarListDblClick
-    OnKeyUp = VariableListKeyDown
+    OnKeyDown = VarListKeyDown
     OnMouseWheelDown = GridMouseWheelDown
     OnMouseWheelUp = GridMouseWheelUp
     ColWidths = (

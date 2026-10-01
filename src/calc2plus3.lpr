@@ -1,4 +1,4 @@
-program Calc2plus3;
+program Calc2Plus3;
 
 {$mode ObjFPC}
 {$H+}
@@ -16,12 +16,12 @@ uses
   {$R *.res}
 
 const
-  AppWideLockName = '58f158a7-f385-43e2-b391-58e3136bec19';
+  APP_WIDE_LOCK_NAME = '58f158a7-f385-43e2-b391-58e3136bec19';
 
 begin
-  if AppWideLock.CreateLock(AppWideLockName) then
+  if AppWideLock.CreateLock(APP_WIDE_LOCK_NAME) then
     begin
-    Autorun.RegisterAutoRun(APP_NAME, ParamStr(0));
+    Autorun.RegisterAutorun(APP_NAME, ParamStr(0));
 
     Application.Title  := APP_TITLE;
     Application.Scaled := True;
@@ -33,7 +33,7 @@ begin
 
     MainFormInstance.Free;
 
-    Autorun.UnregisterAutoRun(APP_NAME);
+    Autorun.UnregisterAutorun(APP_NAME);
     AppWideLock.DropLock;
     end;
 end.

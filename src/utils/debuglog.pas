@@ -1,20 +1,20 @@
 unit DebugLog;
 
-{$mode objfpc}
+{$mode ObjFPC}
 {$modeswitch nestedprocvars}
 {$H+}
 {$inline ON}
 
 interface
 
-procedure DebugLog(const Msg: String);
+procedure DebugLog(const Message: String);
 
 implementation
 
 uses
   SysUtils, DataDir;
 
-procedure DebugLog(const Msg: String);
+procedure DebugLog(const Message: String);
 var
   LogFile: TextFile;
   LogPath: String;
@@ -31,7 +31,7 @@ begin
     Rewrite(LogFile);
     end;
 
-  Writeln(LogFile, FormatDateTime('yyyy-mm-dd hh:nn:ss.zzz', Now) + ' - ' + Msg);
+  Writeln(LogFile, FormatDateTime('yyyy-mm-dd hh:nn:ss.zzz', Now) + ' - ' + Message);
   CloseFile(LogFile);
 end;
 

@@ -30,7 +30,7 @@ uses
 const
   CSV_DELIMITER = '|';
 
-  CSV_COL: record
+  CSV_COLS: record
       Key:   Byte;
       Value: Byte;
       end
@@ -51,12 +51,12 @@ const
 procedure TCSVStorage.SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
 var
   PathFilename: String;
-  TmpFile:      String;
+  TmpFilename:  String;
   CSV:          TCSVDocument;
   Row, Col:     Integer;
 begin
   PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
-  TmpFile      := PathFilename + '.tmp';
+  TmpFilename  := PathFilename + '.tmp';
 
   CSV           := TCSVDocument.Create;
   CSV.Delimiter := CSV_DELIMITER;
@@ -70,7 +70,7 @@ begin
             CSV.Cells[Col, Row] := Grid.Cells[Grid.FixedCols + Col, Grid.FixedRows + Row];
             end;
           end;
-        CSV.SaveToFile(TmpFile);
+        CSV.SaveToFile(TmpFilename);
         end;
       finally
         begin
@@ -83,9 +83,9 @@ begin
       end;
     end;
 
-  if not MoveFileEx(PChar(TmpFile), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
+  if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
     begin
-    SysUtils.DeleteFile(TmpFile);
+    SysUtils.DeleteFile(TmpFilename);
     raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
     end;
 end;
@@ -147,10 +147,10 @@ begin
     try
       try
         begin
-        CSV.Cells[CSV_COL.Key, WORKSPACE_ROWS.VarName]      := 'varname';
-        CSV.Cells[CSV_COL.Value, WORKSPACE_ROWS.VarName]    := VarName;
-        CSV.Cells[CSV_COL.Key, WORKSPACE_ROWS.Expression]   := 'expression';
-        CSV.Cells[CSV_COL.Value, WORKSPACE_ROWS.Expression] := Expression;
+        CSV.Cells[CSV_COLS.Key, WORKSPACE_ROWS.VarName]      := 'varname';
+        CSV.Cells[CSV_COLS.Value, WORKSPACE_ROWS.VarName]    := VarName;
+        CSV.Cells[CSV_COLS.Key, WORKSPACE_ROWS.Expression]   := 'expression';
+        CSV.Cells[CSV_COLS.Value, WORKSPACE_ROWS.Expression] := Expression;
         CSV.SaveToFile(TmpFilename);
         end;
       finally
@@ -196,11 +196,11 @@ begin
           CSV.LoadFromFile(PathFilename);
           if CSV.RowCount > WORKSPACE_ROWS.VarName then
             begin
-            Result.VarName := CSV.Cells[CSV_COL.Value, WORKSPACE_ROWS.VarName];
+            Result.VarName := CSV.Cells[CSV_COLS.Value, WORKSPACE_ROWS.VarName];
             end;
           if CSV.RowCount > WORKSPACE_ROWS.Expression then
             begin
-            Result.Expression := CSV.Cells[CSV_COL.Value, WORKSPACE_ROWS.Expression];
+            Result.Expression := CSV.Cells[CSV_COLS.Value, WORKSPACE_ROWS.Expression];
             end;
           end;
         finally
@@ -233,10 +233,10 @@ begin
     try
       try
         begin
-        CSV.Cells[CSV_COL.Key, WINPOS_ROWS.Left]   := 'left';
-        CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Left] := IntToStr(Pos.X);
-        CSV.Cells[CSV_COL.Key, WINPOS_ROWS.Top]    := 'top';
-        CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Top]  := IntToStr(Pos.Y);
+        CSV.Cells[CSV_COLS.Key, WINPOS_ROWS.Left]   := 'left';
+        CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Left] := IntToStr(Pos.X);
+        CSV.Cells[CSV_COLS.Key, WINPOS_ROWS.Top]    := 'top';
+        CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Top]  := IntToStr(Pos.Y);
         CSV.SaveToFile(TmpFilename);
         end;
       finally
@@ -282,11 +282,11 @@ begin
           CSV.LoadFromFile(PathFilename);
           if CSV.RowCount > WINPOS_ROWS.Left then
             begin
-            Result.X := StrToIntDef(CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Left], 0);
+            Result.X := StrToIntDef(CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Left], 0);
             end;
           if CSV.RowCount > WINPOS_ROWS.Top then
             begin
-            Result.Y := StrToIntDef(CSV.Cells[CSV_COL.Value, WINPOS_ROWS.Top], 0);
+            Result.Y := StrToIntDef(CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Top], 0);
             end;
           end;
         finally

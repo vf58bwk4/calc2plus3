@@ -10,7 +10,7 @@ uses
   Grids;
 
 procedure Initialize(AHistory: TStringGrid);
-procedure InsertItem(const ResultText, ExpressionText: String);
+procedure AppendItem(const ResultText, ExpressionText: String);
 procedure RemoveItem;
 function Grid: TStringGrid;
 
@@ -33,7 +33,7 @@ begin
   History.Col := 0;
 end;
 
-procedure InsertItem(const ResultText, ExpressionText: String);
+procedure AppendItem(const ResultText, ExpressionText: String);
 var
   OldExpression, OldResult: String;
   LastRowIdx, NewRowIdx:    Integer;

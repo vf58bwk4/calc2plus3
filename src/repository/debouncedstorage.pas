@@ -20,7 +20,7 @@ type
     FLastSavedWorkspace: TWorkspaceState;
     FWorkspaceDirty:     Boolean;
 
-    procedure OnDebounceTimer(Sender: TObject);
+    procedure DebounceTimerTimer(Sender: TObject);
     procedure WritePendingWindowPos;
     procedure WritePendingWorkspace;
   public
@@ -47,7 +47,7 @@ const
 
   {================ Private methods =================}
 
-procedure TDebouncedStorage.OnDebounceTimer(Sender: TObject);
+procedure TDebouncedStorage.DebounceTimerTimer(Sender: TObject);
 begin
   FDebounceTimer.Enabled := False;
 
@@ -89,7 +89,7 @@ begin
 
   FDebounceTimer          := TTimer.Create(nil);
   FDebounceTimer.Interval := DEBOUNCE_INTERVAL;
-  FDebounceTimer.OnTimer  := @OnDebounceTimer;
+  FDebounceTimer.OnTimer  := @DebounceTimerTimer;
   FDebounceTimer.Enabled  := False;
 end;
 
