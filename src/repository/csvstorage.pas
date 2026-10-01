@@ -25,7 +25,7 @@ type
 implementation
 
 uses
-  SysUtils, Windows, CsvDocument, DataDir, AppErrors;
+  SysUtils, Classes, Windows, CsvDocument, DataDir, AppErrors;
 
 const
   CSV_DELIMITER = '|';
@@ -52,6 +52,7 @@ procedure TCSVStorage.SaveGridToDataFile(const Grid: TStringGrid; const DataFile
 var
   PathFilename: String;
   TmpFilename:  String;
+  ErrorCode:    DWORD;
   CSV:          TCSVDocument;
   Row, Col:     Integer;
 begin
@@ -78,15 +79,17 @@ begin
         end;
       end;
     except
+    on E: EStreamError do
       begin
-      raise EStorageError.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+      raise EStorageError.CreateFmt('Could not save file "%s": %s', [DataFile.Filename, E.Message]);
       end;
     end;
 
   if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
     begin
+    ErrorCode := GetLastError;
     SysUtils.DeleteFile(TmpFilename);
-    raise EStorageError.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+    raise EStorageError.CreateFmt('Could not save file "%s": %s', [DataFile.Filename, SysErrorMessage(ErrorCode)]);
     end;
 end;
 
@@ -124,8 +127,9 @@ begin
           end;
         end;
       except
+      on E: EStreamError do
         begin
-        raise EStorageError.CreateFmt('Could not load file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+        raise EStorageError.CreateFmt('Could not load file "%s": %s', [DataFile.Filename, E.Message]);
         end;
       end;
     end;
@@ -137,6 +141,7 @@ var
   CSV:          TCSVDocument;
   PathFilename: String;
   TmpFilename:  String;
+  ErrorCode:    DWORD;
 begin
   DataFile     := WORKSPACE_FILE;
   PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
@@ -159,15 +164,17 @@ begin
         end;
       end;
     except
+    on E: EStreamError do
       begin
-      raise EStorageError.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+      raise EStorageError.CreateFmt('Could not save file "%s": %s', [DataFile.Filename, E.Message]);
       end;
     end;
 
   if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
     begin
+    ErrorCode := GetLastError;
     SysUtils.DeleteFile(TmpFilename);
-    raise EStorageError.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+    raise EStorageError.CreateFmt('Could not save file "%s": %s', [DataFile.Filename, SysErrorMessage(ErrorCode)]);
     end;
 end;
 
@@ -209,8 +216,9 @@ begin
           end;
         end;
       except
+      on E: EStreamError do
         begin
-        raise EStorageError.CreateFmt('Could not load file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+        raise EStorageError.CreateFmt('Could not load file "%s": %s', [DataFile.Filename, E.Message]);
         end;
       end;
     end;
@@ -222,6 +230,7 @@ var
   CSV:          TCSVDocument;
   PathFilename: String;
   TmpFilename:  String;
+  ErrorCode:    DWORD;
 begin
   DataFile := WINPOS_FILE;
 
@@ -245,15 +254,17 @@ begin
         end;
       end;
     except
+    on E: EStreamError do
       begin
-      raise EStorageError.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+      raise EStorageError.CreateFmt('Could not save file "%s": %s', [DataFile.Filename, E.Message]);
       end;
     end;
 
   if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
     begin
+    ErrorCode := GetLastError;
     SysUtils.DeleteFile(TmpFilename);
-    raise EStorageError.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+    raise EStorageError.CreateFmt('Could not save file "%s": %s', [DataFile.Filename, SysErrorMessage(ErrorCode)]);
     end;
 end;
 
@@ -295,8 +306,9 @@ begin
           end;
         end;
       except
+      on E: EStreamError do
         begin
-        raise EStorageError.CreateFmt('Could not load file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+        raise EStorageError.CreateFmt('Could not load file "%s": %s', [DataFile.Filename, E.Message]);
         end;
       end;
     end;
