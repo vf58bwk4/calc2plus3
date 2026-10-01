@@ -28,6 +28,7 @@ const
   VARS_FILE: TDataFile      = (Dirname: DATA_DIR; Filename: 'variables.2p3');
   WORKSPACE_FILE: TDataFile = (Dirname: DATA_DIR; Filename: 'workspace.2p3');
   WINPOS_FILE: TDataFile    = (Dirname: DATA_DIR; Filename: 'winpos.2p3');
+  LOG_FILE: TDataFile       = (Dirname: DATA_DIR; Filename: 'calc2plus3.log');
 
   HOT_KEY: THotKey = (Modifiers: MOD_ALT; VirtualKey: VK_K);
 

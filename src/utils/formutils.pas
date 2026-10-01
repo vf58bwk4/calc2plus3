@@ -35,7 +35,7 @@ function AdjustWindowPos(const Pos: TPoint; const W, H: Integer): TPoint;
 implementation
 
 uses
-  Windows, Messages, SysUtils, Math, DebugLog;
+  Windows, Messages, SysUtils, Math;
 
 const
   EM_GETSCROLLPOS = $04DD;

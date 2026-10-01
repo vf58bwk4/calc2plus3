@@ -88,7 +88,7 @@
       <Unit>
         <Filename Value="calc2plus3.lpr" />
         <IsPartOfProject Value="True" />
-        <UnitName Value="Calc2plus3" />
+        <UnitName Value="Calc2Plus3" />
       </Unit>
       <Unit>
         <Filename Value="form\mainform.pas" />
@@ -149,9 +149,9 @@
         <UnitName Value="Autorun" />
       </Unit>
       <Unit>
-        <Filename Value="utils\debuglog.pas" />
+        <Filename Value="utils\logger.pas" />
         <IsPartOfProject Value="True" />
-        <UnitName Value="DebugLog" />
+        <UnitName Value="Logger" />
       </Unit>
       <Unit>
         <Filename Value="services\undoredoservice.pas" />
