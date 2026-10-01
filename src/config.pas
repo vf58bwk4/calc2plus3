@@ -20,7 +20,7 @@ type
   end;
 
 const
-  APP_NAME  = '2plus3';
+  APP_NAME  = 'calc2plus3';
   APP_TITLE = '2 + 3';
 
   DATA_DIR                = APP_NAME;
