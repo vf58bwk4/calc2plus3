@@ -190,11 +190,6 @@
         <IsPartOfProject Value="True" />
         <UnitName Value="ExprLocale" />
       </Unit>
-      <Unit>
-        <Filename Value="utils\legacymigration.pas" />
-        <IsPartOfProject Value="True" />
-        <UnitName Value="LegacyMigration" />
-      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

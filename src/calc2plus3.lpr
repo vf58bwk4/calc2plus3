@@ -11,7 +11,6 @@ uses
   Config,
   AppWideLock,
   Autorun,
-  LegacyMigration,
   MainForm;
 
   {$R *.res}
@@ -22,7 +21,6 @@ const
 begin
   if AppWideLock.CreateLock(APP_WIDE_LOCK_NAME) then
     begin
-    LegacyMigration.MigrateFromLegacyName;
     Autorun.RegisterAutorun(APP_NAME, ParamStr(0));
 
     Application.Title  := APP_TITLE;
