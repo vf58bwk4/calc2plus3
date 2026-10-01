@@ -19,7 +19,7 @@ function Grid: TStringGrid;
 implementation
 
 uses
-  SysUtils, Config, ExprService, Storage, GridUtils, Logger;
+  SysUtils, Math, Config, ExprService, Storage, GridUtils, Logger;
 
 var
   VarList: TStringGrid;
@@ -44,7 +44,9 @@ begin
   SkippedCount := 0;
   for Row := VarList.RowCount - 1 downto VarList.FixedRows do
     begin
-    if IsValidVariableName(VarList.Cells[0, Row]) and TryStrToFloat(VarList.Cells[1, Row], Value) then
+    if IsValidVariableName(VarList.Cells[0, Row])
+       and TryStrToFloat(VarList.Cells[1, Row], Value)
+       and not (IsInfinite(Value) or IsNan(Value)) then
       begin
       ExprService.UpsertVariable(VarList.Cells[0, Row], Value);
       end

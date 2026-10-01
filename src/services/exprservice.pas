@@ -15,7 +15,7 @@ procedure UpsertVariable(const Name: String; const Value: Double);
 implementation
 
 uses
-  SysUtils, RegExpr, FPExprPars, AppErrors;
+  SysUtils, Math, RegExpr, FPExprPars, AppErrors;
 
 var
   Parser:      TFPExpressionParser;
@@ -80,6 +80,11 @@ begin
       begin
       raise EInputError.Create('Unsupported type of the result');
       end;
+    end;
+
+  if IsInfinite(Result) or IsNan(Result) then
+    begin
+    raise EInputError.Create('Result is out of range');
     end;
 end;
 
