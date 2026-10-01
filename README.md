@@ -75,8 +75,8 @@ The program window is divided into four panels:
 
 ### Data Storage
 - History and variables are stored in:
-    - %APPDATA%\2plus3\history.2p3
-    - %APPDATA%\2plus3\variables.2p3
+    - %APPDATA%\calc2plus3\history.2p3
+    - %APPDATA%\calc2plus3\variables.2p3
 
 ### Tray and Hotkey
 - Closing the program window hides it in the **System Tray**.

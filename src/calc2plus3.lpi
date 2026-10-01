@@ -26,7 +26,7 @@
       <MajorVersionNr Value="1" />
       <Language Value="0409" />
       <CharSet Value="04B0" />
-      <StringTable CompanyName="vf58bwk4" FileDescription="2 + 3 calculator" InternalName="2plus3"
+      <StringTable CompanyName="vf58bwk4" FileDescription="2 + 3 calculator" InternalName="calc2plus3"
         LegalCopyright="Copyright (c) 2025 vf58bwk4" OriginalFilename="calc2plus3.exe"
         ProductName="2 + 3" ProductVersion="1.0.0.0" />
     </VersionInfo>
