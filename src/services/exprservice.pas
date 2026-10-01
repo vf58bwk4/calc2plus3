@@ -14,7 +14,7 @@ procedure UpsertVariable(const Name: String; const Value: Double);
 implementation
 
 uses
-  SysUtils, RegExpr, FPExprPars;
+  SysUtils, RegExpr, FPExprPars, AppErrors;
 
 var
   Parser:      TFPExpressionParser;
@@ -46,7 +46,7 @@ var
 begin
   if not IsValidVariableName(Name) then
     begin
-    raise EExprParser.Create('Wrong variable name');
+    raise EInputError.Create('Wrong variable name');
     end;
 
   VarObj := Parser.Identifiers.FindIdentifier(Name);
@@ -77,7 +77,7 @@ begin
       end;
     else
       begin
-      raise EExprParser.Create('Unsupported type of the result');
+      raise EInputError.Create('Unsupported type of the result');
       end;
     end;
 end;

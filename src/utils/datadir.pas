@@ -12,7 +12,7 @@ function ForceDataDir(const Dir: String): String;
 implementation
 
 uses
-  SysUtils, Windows, ShlObj;
+  SysUtils, Windows, ShlObj, AppErrors;
 
 function GetDataDir(const Dir: String): String;
 var
@@ -21,7 +21,7 @@ var
 begin
   if SHGetFolderPath(0, CSIDL_APPDATA, 0, 0, Path) <> S_OK then
     begin
-    raise Exception.CreateFmt('Could not get AppData\Roaming folder (error %d)', [GetLastError]);
+    raise EStorageError.CreateFmt('Could not get AppData\Roaming folder (error %d)', [GetLastError]);
     end;
 
   BaseDir := IncludeTrailingPathDelimiter(Path);
@@ -37,7 +37,7 @@ begin
     begin
     if not ForceDirectories(DataDir) then
       begin
-      raise Exception.Create('Could not create directory: ' + DataDir);
+      raise EStorageError.Create('Could not create directory: ' + DataDir);
       end;
     end;
   Result := DataDir;

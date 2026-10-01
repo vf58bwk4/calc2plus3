@@ -25,7 +25,7 @@ type
 implementation
 
 uses
-  SysUtils, Windows, CsvDocument, DataDir;
+  SysUtils, Windows, CsvDocument, DataDir, AppErrors;
 
 const
   CSV_DELIMITER = '|';
@@ -79,14 +79,14 @@ begin
       end;
     except
       begin
-      raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+      raise EStorageError.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
       end;
     end;
 
   if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
     begin
     SysUtils.DeleteFile(TmpFilename);
-    raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+    raise EStorageError.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
     end;
 end;
 
@@ -125,7 +125,7 @@ begin
         end;
       except
         begin
-        raise Exception.CreateFmt('Could not load file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+        raise EStorageError.CreateFmt('Could not load file "%s" (error %d)', [DataFile.Filename, GetLastError]);
         end;
       end;
     end;
@@ -160,14 +160,14 @@ begin
       end;
     except
       begin
-      raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+      raise EStorageError.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
       end;
     end;
 
   if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
     begin
     SysUtils.DeleteFile(TmpFilename);
-    raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+    raise EStorageError.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
     end;
 end;
 
@@ -210,7 +210,7 @@ begin
         end;
       except
         begin
-        raise Exception.CreateFmt('Could not load file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+        raise EStorageError.CreateFmt('Could not load file "%s" (error %d)', [DataFile.Filename, GetLastError]);
         end;
       end;
     end;
@@ -246,14 +246,14 @@ begin
       end;
     except
       begin
-      raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+      raise EStorageError.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
       end;
     end;
 
   if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
     begin
     SysUtils.DeleteFile(TmpFilename);
-    raise Exception.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+    raise EStorageError.CreateFmt('Could not save file "%s" (error %d)', [DataFile.Filename, GetLastError]);
     end;
 end;
 
@@ -296,7 +296,7 @@ begin
         end;
       except
         begin
-        raise Exception.CreateFmt('Could not load file "%s" (error %d)', [DataFile.Filename, GetLastError]);
+        raise EStorageError.CreateFmt('Could not load file "%s" (error %d)', [DataFile.Filename, GetLastError]);
         end;
       end;
     end;

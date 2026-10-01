@@ -144,6 +144,11 @@
         <UnitName Value="Config" />
       </Unit>
       <Unit>
+        <Filename Value="apperrors.pas" />
+        <IsPartOfProject Value="True" />
+        <UnitName Value="AppErrors" />
+      </Unit>
+      <Unit>
         <Filename Value="utils\autorun.pas" />
         <IsPartOfProject Value="True" />
         <UnitName Value="Autorun" />
