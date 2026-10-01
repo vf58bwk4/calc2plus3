@@ -12,7 +12,7 @@ uses
 procedure Initialize(AVarList: TStringGrid);
 function FormatNumber(const Value: Double): String;
 procedure UpsertItem(const VarName: String; const NewValue: Double);
-procedure RemoveItem;
+function RemoveItem: Boolean;
 function GetValue(const VarName: String): Double;
 function Grid: TStringGrid;
 
@@ -71,18 +71,21 @@ begin
   Storage.SaveGridToDataFile(VarList, VARS_FILE);
 end;
 
-procedure RemoveItem;
+function RemoveItem: Boolean;
 var
   DeleteRowIdx: Integer;
   VarName:      String;
 begin
-  DeleteRowIdx := GetClickedGridRowIndex(VarList);
-  VarName      := VarList.Cells[VarList.FixedCols, DeleteRowIdx];
+  Result := TryGetClickedRow(VarList, DeleteRowIdx);
+  if Result then
+    begin
+    VarName := VarList.Cells[VarList.FixedCols, DeleteRowIdx];
 
-  VarList.DeleteRow(DeleteRowIdx);
-  ExprService.RemoveVariable(VarName);
+    VarList.DeleteRow(DeleteRowIdx);
+    ExprService.RemoveVariable(VarName);
 
-  Storage.SaveGridToDataFile(VarList, VARS_FILE);
+    Storage.SaveGridToDataFile(VarList, VARS_FILE);
+    end;
 end;
 
 function GetValue(const VarName: String): Double;

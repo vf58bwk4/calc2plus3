@@ -13,24 +13,30 @@ uses
 procedure StringGridMouseWheelDown(Grid: TStringGrid; const Shift: TShiftState; const MousePos: TPoint; var Handled: Boolean);
 procedure StringGridMouseWheelUp(Grid: TStringGrid; const Shift: TShiftState; const MousePos: TPoint; var Handled: Boolean);
 
-function GetClickedGridRowIndex(const Grid: TCustomGrid): Integer;
+function TryGetClickedRow(const Grid: TStringGrid; out Row: Integer): Boolean;
 
 function FindRowByCol0Value(const Grid: TStringGrid; const Col0Value: String; out RowIdx: Integer): Boolean;
 
-function GetClickedCellValue(const Grid: TStringGrid; const MaxCol: Integer): String;
-function GetKeyDownCellValue(const Grid: TStringGrid; const MaxCol: Integer): String;
+function TryGetClickedCellValue(const Grid: TStringGrid; const MaxCol: Integer; out Value: String): Boolean;
+function TryGetKeyDownCellValue(const Grid: TStringGrid; const MaxCol: Integer; out Value: String): Boolean;
 
 implementation
 
 uses
   SysUtils, Controls, Windows;
 
-function GetClickedGridRowIndex(const Grid: TCustomGrid): Integer;
+function IsDataRow(const Grid: TStringGrid; const Row: Integer): Boolean;
+begin
+  Result := (Row >= Grid.FixedRows) and (Row < Grid.RowCount);
+end;
+
+function TryGetClickedRow(const Grid: TStringGrid; out Row: Integer): Boolean;
 var
   LocalPos: TPoint;
 begin
   LocalPos := Grid.ScreenToClient(Mouse.CursorPos);
-  Result := Grid.MouseToCell(LocalPos).Y;
+  Row      := Grid.MouseToCell(LocalPos).Y;
+  Result   := IsDataRow(Grid, Row);
 end;
 
 procedure StringGridMouseWheelDown(Grid: TStringGrid; const Shift: TShiftState; const MousePos: TPoint; var Handled: Boolean);
@@ -69,7 +75,7 @@ begin
   Result := False;
 end;
 
-function GetClickedCellValue(const Grid: TStringGrid; const MaxCol: Integer): String;
+function TryGetClickedCellValue(const Grid: TStringGrid; const MaxCol: Integer; out Value: String): Boolean;
 var
   LocalPos, CellPos: TPoint;
   ClickedCol:        Integer;
@@ -78,25 +84,25 @@ begin
   CellPos    := Grid.MouseToCell(LocalPos);
   ClickedCol := CellPos.X - Grid.FixedCols;
 
-  if (CellPos.Y >= Grid.FixedRows) and (ClickedCol >= 0) and (ClickedCol < MaxCol) then
+  Value  := '';
+  Result := IsDataRow(Grid, CellPos.Y) and (ClickedCol >= 0) and (ClickedCol < MaxCol);
+  if Result then
     begin
-    Result := Grid.Cells[CellPos.X, CellPos.Y];
-    end
-  else
-    begin
-    raise Exception.Create('Clicked out of range');
+    Value := Grid.Cells[CellPos.X, CellPos.Y];
     end;
 end;
 
-function GetKeyDownCellValue(const Grid: TStringGrid; const MaxCol: Integer): String;
+function TryGetKeyDownCellValue(const Grid: TStringGrid; const MaxCol: Integer; out Value: String): Boolean;
+var
+  KeyDownCol: Integer;
 begin
-  if (Grid.Col - Grid.FixedCols < MaxCol) then
+  KeyDownCol := Grid.Col - Grid.FixedCols;
+
+  Value  := '';
+  Result := IsDataRow(Grid, Grid.Row) and (KeyDownCol >= 0) and (KeyDownCol < MaxCol);
+  if Result then
     begin
-    Result := Grid.Cells[Grid.Col, Grid.Row];
-    end
-  else
-    begin
-    raise Exception.Create('Key down on non-variable column');
+    Value := Grid.Cells[Grid.Col, Grid.Row];
     end;
 end;
 

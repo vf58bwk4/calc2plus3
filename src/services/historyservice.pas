@@ -11,7 +11,7 @@ uses
 
 procedure Initialize(AHistory: TStringGrid);
 procedure AppendItem(const ResultText, ExpressionText: String);
-procedure RemoveItem;
+function RemoveItem: Boolean;
 function Grid: TStringGrid;
 
 implementation
@@ -65,10 +65,16 @@ begin
   Storage.SaveGridToDataFile(History, HISTORY_FILE);
 end;
 
-procedure RemoveItem;
+function RemoveItem: Boolean;
+var
+  DeleteRowIdx: Integer;
 begin
-  History.DeleteRow(GetClickedGridRowIndex(History));
-  Storage.SaveGridToDataFile(History, HISTORY_FILE);
+  Result := TryGetClickedRow(History, DeleteRowIdx);
+  if Result then
+    begin
+    History.DeleteRow(DeleteRowIdx);
+    Storage.SaveGridToDataFile(History, HISTORY_FILE);
+    end;
 end;
 
 function Grid: TStringGrid;

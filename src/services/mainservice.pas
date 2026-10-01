@@ -68,15 +68,20 @@ var
 type
   TValueAction      = procedure(const Value: String);
   TGridValueContext = (gvcSingleColumnGrid = 1, gvcTwoColumnsGrid = 2);
-  TGridValueGetter  = function(const Grid: TStringGrid; const MaxCol: Integer): String;
+  TGridValueGetter  = function(const Grid: TStringGrid; const MaxCol: Integer; out Value: String): Boolean;
 
 procedure ExecuteActionFromGrid(Action: TValueAction; ValueGetter: TGridValueGetter; Context: TGridValueContext; Grid: TStringGrid);
+var
+  Value: String;
 begin
     try
       begin
-      Action(ValueGetter(Grid, Ord(Context)));
+      if ValueGetter(Grid, Ord(Context), Value) then
+        begin
+        Action(Value);
 
-      DisplayService.StatusOK;
+        DisplayService.StatusOK;
+        end;
       end;
     except
     on E: Exception do
@@ -266,52 +271,52 @@ end;
 
 procedure CopyFromHistoryToExpressionOnClick;
 begin
-  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.GetClickedCellValue, gvcTwoColumnsGrid, HistoryService.Grid);
+  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.TryGetClickedCellValue, gvcTwoColumnsGrid, HistoryService.Grid);
 end;
 
 procedure CopyFromHistoryToExpressionOnKey;
 begin
-  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.GetKeyDownCellValue, gvcTwoColumnsGrid, HistoryService.Grid);
+  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.TryGetKeyDownCellValue, gvcTwoColumnsGrid, HistoryService.Grid);
 end;
 
 procedure ReplaceExpressionFromHistoryOnClick;
 begin
-  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.GetClickedCellValue, gvcTwoColumnsGrid, HistoryService.Grid);
+  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.TryGetClickedCellValue, gvcTwoColumnsGrid, HistoryService.Grid);
 end;
 
 procedure ReplaceExpressionFromHistoryOnKey;
 begin
-  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.GetKeyDownCellValue, gvcTwoColumnsGrid, HistoryService.Grid);
+  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.TryGetKeyDownCellValue, gvcTwoColumnsGrid, HistoryService.Grid);
 end;
 
 procedure CopyFromVarListToExpressionOnKey;
 begin
-  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.GetKeyDownCellValue, gvcTwoColumnsGrid, VariableService.Grid);
+  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.TryGetKeyDownCellValue, gvcTwoColumnsGrid, VariableService.Grid);
 end;
 
 procedure CopyFromVarListToExpressionOnClick;
 begin
-  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.GetClickedCellValue, gvcTwoColumnsGrid, VariableService.Grid);
+  ExecuteActionFromGrid(@InsertInExpression, @GridUtils.TryGetClickedCellValue, gvcTwoColumnsGrid, VariableService.Grid);
 end;
 
 procedure ReplaceExpressionFromVarListOnClick;
 begin
-  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.GetClickedCellValue, gvcTwoColumnsGrid, VariableService.Grid);
+  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.TryGetClickedCellValue, gvcTwoColumnsGrid, VariableService.Grid);
 end;
 
 procedure ReplaceExpressionFromVarListOnKey;
 begin
-  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.GetKeyDownCellValue, gvcTwoColumnsGrid, VariableService.Grid);
+  ExecuteActionFromGrid(@ReplaceExpression, @GridUtils.TryGetKeyDownCellValue, gvcTwoColumnsGrid, VariableService.Grid);
 end;
 
 procedure ReplaceVarNameFromVarListOnClick;
 begin
-  ExecuteActionFromGrid(@ReplaceVarName, @GridUtils.GetClickedCellValue, gvcSingleColumnGrid, VariableService.Grid);
+  ExecuteActionFromGrid(@ReplaceVarName, @GridUtils.TryGetClickedCellValue, gvcSingleColumnGrid, VariableService.Grid);
 end;
 
 procedure ReplaceVarNameFromVarListOnKey;
 begin
-  ExecuteActionFromGrid(@ReplaceVarName, @GridUtils.GetKeyDownCellValue, gvcSingleColumnGrid, VariableService.Grid);
+  ExecuteActionFromGrid(@ReplaceVarName, @GridUtils.TryGetKeyDownCellValue, gvcSingleColumnGrid, VariableService.Grid);
 end;
 
 procedure DeleteWordLeft;
@@ -326,14 +331,18 @@ end;
 
 procedure RemoveVarListItem;
 begin
-  VariableService.RemoveItem;
-  DisplayService.StatusOK;
+  if VariableService.RemoveItem then
+    begin
+    DisplayService.StatusOK;
+    end;
 end;
 
 procedure RemoveHistoryItem;
 begin
-  HistoryService.RemoveItem;
-  DisplayService.StatusOK;
+  if HistoryService.RemoveItem then
+    begin
+    DisplayService.StatusOK;
+    end;
 end;
 
 procedure SetInitialFocus;
