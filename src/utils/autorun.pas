@@ -11,7 +11,7 @@ procedure UnregisterAutorun(const AppName: String);
 implementation
 
 uses
-  Windows, Registry;
+  SysUtils, Registry, Logger;
 
 const
   AUTORUN_REG_PATH = 'Software\Microsoft\Windows\CurrentVersion\Run';
@@ -28,11 +28,19 @@ begin
         begin
         Reg.WriteString(AppName, AppPath);
         Reg.CloseKey;
+        end
+      else
+        begin
+        LogWarning('Could not register autorun: cannot open HKCU\' + AUTORUN_REG_PATH);
         end;
       finally
       Reg.Free;
       end;
     except
+    on E: Exception do
+      begin
+      LogWarning('Could not register autorun: ' + E.ClassName + ': ' + E.Message);
+      end;
     end;
 end;
 
@@ -53,6 +61,10 @@ begin
       Reg.Free;
       end;
     except
+    on E: Exception do
+      begin
+      LogWarning('Could not unregister autorun: ' + E.ClassName + ': ' + E.Message);
+      end;
     end;
 end;
 

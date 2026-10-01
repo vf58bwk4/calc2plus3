@@ -54,7 +54,7 @@ implementation
 
 uses
   SysUtils, Windows, Controls, StdCtrls, Grids, Types,
-  FormUtils, GridUtils, Storage, AppErrors,
+  FormUtils, GridUtils, Storage, AppErrors, Logger,
   ExprService, DisplayService, HistoryService, VariableService, UndoRedoService;
 
 var
@@ -206,9 +206,21 @@ begin
       begin
       Storage.SaveWorkspace(_VarName.Text, _Expression.Text, True);
       end;
-    finally
+    except
+    on E: Exception do
+      begin
+      LogError('Could not save workspace on exit: ' + E.ClassName + ': ' + E.Message);
+      end;
+    end;
+
+    try
       begin
       Storage.SaveWindowPos(Point(_MainForm.Left, _MainForm.Top), True);
+      end;
+    except
+    on E: Exception do
+      begin
+      LogError('Could not save window position on exit: ' + E.ClassName + ': ' + E.Message);
       end;
     end;
 end;

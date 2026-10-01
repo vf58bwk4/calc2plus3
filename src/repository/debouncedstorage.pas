@@ -51,8 +51,15 @@ procedure TDebouncedStorage.DebounceTimerTimer(Sender: TObject);
 begin
   FDebounceTimer.Enabled := False;
 
-  WritePendingWindowPos;
-  WritePendingWorkspace;
+    try
+      begin
+      WritePendingWindowPos;
+      end;
+    finally
+      begin
+      WritePendingWorkspace;
+      end;
+    end;
 end;
 
 procedure TDebouncedStorage.WritePendingWindowPos;
