@@ -74,20 +74,11 @@ procedure ExecuteActionFromGrid(Action: TValueAction; ValueGetter: TGridValueGet
 var
   Value: String;
 begin
-    try
-      begin
-      if ValueGetter(Grid, Ord(Context), Value) then
-        begin
-        Action(Value);
+  if ValueGetter(Grid, Ord(Context), Value) then
+    begin
+    Action(Value);
 
-        DisplayService.StatusOK;
-        end;
-      end;
-    except
-    on E: Exception do
-      begin
-      DisplayService.StatusError(E.Message);
-      end;
+    DisplayService.StatusOK;
     end;
 end;
 
@@ -128,23 +119,14 @@ var
   VarName:  String;
   VarValue: Double;
 begin
-    try
-      begin
-      VarName       := Trim(_VarName.Text);
-      _VarName.Text := VarName;
+  VarName       := Trim(_VarName.Text);
+  _VarName.Text := VarName;
 
-      VarValue := ExprService.Calculate(_Expression.Text);
+  VarValue := ExprService.Calculate(_Expression.Text);
 
-      VariableService.UpsertItem(VarName, ValueUpdater(VariableService.GetValue(VarName), VarValue));
+  VariableService.UpsertItem(VarName, ValueUpdater(VariableService.GetValue(VarName), VarValue));
 
-      DisplayService.StatusOK;
-      end
-    except
-    on E: Exception do
-      begin
-      DisplayService.StatusError(E.Message);
-      end;
-    end;
+  DisplayService.StatusOK;
 end;
 
 {================ Interface routines ==============}
@@ -154,7 +136,6 @@ var
   WinPos:    TPoint;
   Workspace: TWorkspaceState;
 begin
-  DisplayService.Initialize(AMainForm.StatusBar);
   DisplayService.StatusOK;
 
   _MainForm   := AMainForm;
@@ -249,24 +230,15 @@ procedure CalculateAndAppendToHistory;
 var
   NewExpression, NewResult: String;
 begin
-    try
-      begin
-      NewExpression := _Expression.Text;
-      NewResult     := VariableService.FormatNumber(ExprService.Calculate(NewExpression));
+  NewExpression := _Expression.Text;
+  NewResult     := VariableService.FormatNumber(ExprService.Calculate(NewExpression));
 
-      _Expression.Text     := NewResult;
-      _Expression.SelStart := Length(NewResult);
+  _Expression.Text     := NewResult;
+  _Expression.SelStart := Length(NewResult);
 
-      HistoryService.AppendItem(NewResult, NewExpression);
+  HistoryService.AppendItem(NewResult, NewExpression);
 
-      DisplayService.StatusOK;
-      end
-    except
-    on E: Exception do
-      begin
-      DisplayService.StatusError(E.Message);
-      end;
-    end;
+  DisplayService.StatusOK;
 end;
 
 procedure CopyFromHistoryToExpressionOnClick;
