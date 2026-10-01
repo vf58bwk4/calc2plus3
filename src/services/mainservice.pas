@@ -36,6 +36,8 @@ procedure ReplaceVarNameFromVarListOnKey;
 procedure DeleteWordLeft;
 procedure ClearVarName;
 
+procedure PasteToExpression;
+
 procedure RemoveVarListItem;
 procedure RemoveHistoryItem;
 
@@ -53,7 +55,7 @@ procedure SaveWindowPos;
 implementation
 
 uses
-  SysUtils, Windows, Controls, StdCtrls, Grids, Types,
+  SysUtils, Windows, Controls, StdCtrls, Grids, Types, Clipbrd, LazUTF8,
   FormUtils, GridUtils, Storage, AppErrors, Logger, ExprLocale,
   ExprService, DisplayService, HistoryService, VariableService, UndoRedoService;
 
@@ -89,10 +91,10 @@ begin
   CursorPos    := _Expression.SelStart;
   OldSelLength := _Expression.SelLength;
 
-  _Expression.Text := Copy(_Expression.Text, 1, CursorPos) + Value + Copy(_Expression.Text, CursorPos + OldSelLength +
-    1, Length(_Expression.Text));
+  _Expression.Text := UTF8Copy(_Expression.Text, 1, CursorPos) + Value + UTF8Copy(_Expression.Text, CursorPos +
+    OldSelLength + 1, UTF8Length(_Expression.Text));
 
-  _Expression.SelStart := CursorPos + Length(Value);
+  _Expression.SelStart := CursorPos + UTF8Length(Value);
 
   _Expression.SetFocus;
 end;
@@ -100,7 +102,7 @@ end;
 procedure ReplaceExpression(const Value: String);
 begin
   _Expression.Text     := Value;
-  _Expression.SelStart := Length(Value);
+  _Expression.SelStart := UTF8Length(Value);
   _Expression.SetFocus;
 end;
 
@@ -331,6 +333,17 @@ end;
 procedure ClearVarName;
 begin
   _VarName.Clear;
+end;
+
+procedure PasteToExpression;
+var
+  Text: String;
+begin
+  Text := ExprLocale.NormalizePastedText(Clipboard.AsText);
+  if Text <> '' then
+    begin
+    InsertInExpression(Text);
+    end;
 end;
 
 procedure RemoveVarListItem;
