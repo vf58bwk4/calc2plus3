@@ -63,17 +63,10 @@ implementation
 
 uses
   Config, FormUtils, GridUtils, MainService,
-  Storage, DisplayService, Types, Dialogs,
-  FPExprPars, AppErrors, Logger;
+  Storage, DisplayService, Types, Dialogs, AppErrors;
 
 const
   HOT_KEY_ID = 1;
-
-// The message of an expected error is enough for the user; anything else is a bug
-function IsExpectedError(const E: Exception): Boolean;
-begin
-  Result := (E is EAppError) or (E is EExprParser) or (E is EExprScanner) or (E is EMathError) or (E is EDivByZero);
-end;
 
 procedure TMainForm.ShowNormalWindow; inline;
 begin
@@ -83,15 +76,7 @@ end;
 
 procedure TMainForm.ApplicationException(Sender: TObject; E: Exception);
 begin
-  if IsExpectedError(E) then
-    begin
-    DisplayService.StatusError(E.Message);
-    end
-  else
-    begin
-    LogError(E.ClassName + ': ' + E.Message);
-    DisplayService.StatusError('Unexpected: ' + E.ClassName + ': ' + E.Message);
-    end;
+  DisplayService.StatusError(ReportError(E));
 end;
 
 procedure TMainForm.FormCreate(Sender: TObject);

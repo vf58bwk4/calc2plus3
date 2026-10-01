@@ -8,6 +8,7 @@ unit ExprService;
 interface
 
 function Calculate(const Expression: String): Double;
+function IsValidVariableName(const S: String): Boolean;
 procedure RemoveVariable(const Name: String);
 procedure UpsertVariable(const Name: String; const Value: Double);
 

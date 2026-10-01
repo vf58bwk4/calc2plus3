@@ -54,7 +54,7 @@ implementation
 
 uses
   SysUtils, Windows, Controls, StdCtrls, Grids, Types,
-  FormUtils, GridUtils, Storage,
+  FormUtils, GridUtils, Storage, AppErrors,
   ExprService, DisplayService, HistoryService, VariableService, UndoRedoService;
 
 var
@@ -133,10 +133,22 @@ end;
 
 procedure Initialize(const AMainForm: TMainForm);
 var
-  WinPos:    TPoint;
-  Workspace: TWorkspaceState;
+  WinPos:     TPoint;
+  Workspace:  TWorkspaceState;
+  LoadErrors: String;
+
+  procedure AddLoadError(const E: Exception);
+  begin
+    if LoadErrors <> '' then
+      begin
+      LoadErrors := LoadErrors + ' | ';
+      end;
+    LoadErrors := LoadErrors + ReportError(E);
+  end;
+
 begin
   DisplayService.StatusOK;
+  LoadErrors := '';
 
   _MainForm   := AMainForm;
   _VarName    := AMainForm.VarName;
@@ -152,8 +164,9 @@ begin
       _Expression.Text := Workspace.Expression;
       end;
     except
+    on E: Exception do
       begin
-      DisplayService.StatusError('Failed to load workspace.');
+      AddLoadError(E);
       end;
     end;
 
@@ -162,8 +175,9 @@ begin
       VariableService.Initialize(AMainForm.VarList);
       end;
     except
+    on E: Exception do
       begin
-      DisplayService.StatusError('Failed to load variables.');
+      AddLoadError(E);
       end;
     end;
 
@@ -172,9 +186,15 @@ begin
       HistoryService.Initialize(AMainForm.History);
       end;
     except
+    on E: Exception do
       begin
-      DisplayService.StatusError('Failed to load history.');
+      AddLoadError(E);
       end;
+    end;
+
+  if LoadErrors <> '' then
+    begin
+    DisplayService.StatusError(LoadErrors);
     end;
 
   UndoRedoService.CommitState(MakeUndoRedoState(_Expression.Text, _Expression.SelStart));

@@ -19,7 +19,7 @@ function Grid: TStringGrid;
 implementation
 
 uses
-  SysUtils, Config, ExprService, Storage, GridUtils;
+  SysUtils, Config, ExprService, Storage, GridUtils, Logger;
 
 var
   VarList: TStringGrid;
@@ -32,24 +32,31 @@ end;
 
 procedure Initialize(AVarList: TStringGrid);
 var
-  Row: Integer;
+  Row, SkippedCount: Integer;
+  Value:             Double;
 begin
   VarList                 := AVarList;
   VarList.AutoFillColumns := True;
 
-    try
-      begin
-      Storage.LoadGridFromDataFile(VarList, VARS_FILE);
+  Storage.LoadGridFromDataFile(VarList, VARS_FILE);
 
-      for Row := VarList.FixedRows to VarList.RowCount - 1 do
-        begin
-        ExprService.UpsertVariable(VarList.Cells[0, Row], StrToFloat(VarList.Cells[1, Row]));
-        end;
-      end;
-    except
+  SkippedCount := 0;
+  for Row := VarList.RowCount - 1 downto VarList.FixedRows do
+    begin
+    if IsValidVariableName(VarList.Cells[0, Row]) and TryStrToFloat(VarList.Cells[1, Row], Value) then
       begin
-      // TODO: cleanup VarList and ExprService variables
+      ExprService.UpsertVariable(VarList.Cells[0, Row], Value);
+      end
+    else
+      begin
+      VarList.DeleteRow(Row);
+      Inc(SkippedCount);
       end;
+    end;
+
+  if SkippedCount > 0 then
+    begin
+    LogWarning(Format('Skipped %d invalid rows in %s', [SkippedCount, VARS_FILE.Filename]));
     end;
 end;
 
