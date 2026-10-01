@@ -10,7 +10,6 @@ uses
   Grids;
 
 procedure Initialize(AVarList: TStringGrid);
-function FormatNumber(const Value: Double): String;
 procedure UpsertItem(const VarName: String; const NewValue: Double);
 function RemoveItem: Boolean;
 function GetValue(const VarName: String): Double;
@@ -19,16 +18,10 @@ function Grid: TStringGrid;
 implementation
 
 uses
-  SysUtils, Math, Config, ExprService, Storage, GridUtils, Logger;
+  SysUtils, Math, Config, ExprService, ExprLocale, Storage, GridUtils, Logger;
 
 var
   VarList: TStringGrid;
-
-function FormatNumber(const Value: Double): String;
-begin
-  Result := Value.ToString;
-end;
-
 
 procedure Initialize(AVarList: TStringGrid);
 var
@@ -39,13 +32,13 @@ begin
   VarList.AutoFillColumns     := True;
   VarList.AllowOutboundEvents := False;
 
-  Storage.LoadGridFromDataFile(VarList, VARS_FILE);
+  Storage.LoadGridFromDataFile(VarList, VARS_FILE, @ExprLocale.ToLocal);
 
   SkippedCount := 0;
   for Row := VarList.RowCount - 1 downto VarList.FixedRows do
     begin
     if IsValidVariableName(VarList.Cells[0, Row])
-       and TryStrToFloat(VarList.Cells[1, Row], Value)
+       and TryParseNumber(VarList.Cells[1, Row], Value)
        and not (IsInfinite(Value) or IsNan(Value)) then
       begin
       ExprService.UpsertVariable(VarList.Cells[0, Row], Value);
@@ -78,7 +71,7 @@ begin
     end;
   VarList.InsertRowWithValues(VarList.FixedRows, [VarName, FormatNumber(NewValue)]);
 
-  Storage.SaveGridToDataFile(VarList, VARS_FILE);
+  Storage.SaveGridToDataFile(VarList, VARS_FILE, @ExprLocale.ToInvariant);
 end;
 
 function RemoveItem: Boolean;
@@ -94,7 +87,7 @@ begin
     VarList.DeleteRow(DeleteRowIdx);
     ExprService.RemoveVariable(VarName);
 
-    Storage.SaveGridToDataFile(VarList, VARS_FILE);
+    Storage.SaveGridToDataFile(VarList, VARS_FILE, @ExprLocale.ToInvariant);
     end;
 end;
 
@@ -104,7 +97,7 @@ var
 begin
   if FindRowByCol0Value(VarList, VarName, RowIdx) then
     begin
-    Result := StrToFloat(VarList.Cells[1, RowIdx]);
+    Result := ParseNumber(VarList.Cells[1, RowIdx]);
     end
   else
     begin

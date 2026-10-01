@@ -15,9 +15,12 @@ type
     Expression: String;
   end;
 
+  { Applied to every cell: on save from grid to file, on load from file to grid }
+  TCellConverter = function(const Text: String): String;
+
   IStorage = interface
-    procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
-    procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
+    procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile; const ConvertCell: TCellConverter);
+    procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile; const ConvertCell: TCellConverter);
 
     procedure SaveWorkspace(const VarName, Expression: String; const Force: Boolean = False);
     function LoadWorkspace: TWorkspaceState;
@@ -29,8 +32,8 @@ type
 procedure Initialize;
 procedure Finalize;
 
-procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
-procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
+procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile; const ConvertCell: TCellConverter);
+procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile; const ConvertCell: TCellConverter);
 
 procedure SaveWorkspace(const VarName, Expression: String; const Force: Boolean = False);
 function LoadWorkspace: TWorkspaceState;
@@ -56,14 +59,14 @@ begin
   _Storage := nil;
 end;
 
-procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
+procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile; const ConvertCell: TCellConverter);
 begin
-  _Storage.SaveGridToDataFile(Grid, DataFile);
+  _Storage.SaveGridToDataFile(Grid, DataFile, ConvertCell);
 end;
 
-procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
+procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile; const ConvertCell: TCellConverter);
 begin
-  _Storage.LoadGridFromDataFile(Grid, DataFile);
+  _Storage.LoadGridFromDataFile(Grid, DataFile, ConvertCell);
 end;
 
 procedure SaveWorkspace(const VarName, Expression: String; const Force: Boolean);

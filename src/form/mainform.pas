@@ -13,6 +13,15 @@ uses
 
 type
 
+  { Lets the form handle Ctrl+V, Shift+Insert and the context menu Paste }
+  TEdit = class(StdCtrls.TEdit)
+  private
+    FOnPaste: TNotifyEvent;
+    procedure WMPaste(var Msg: TMessage); message WM_PASTE;
+  public
+    property OnPaste: TNotifyEvent read FOnPaste write FOnPaste;
+  end;
+
   { TMainForm }
 
   TMainForm = class(TForm)
@@ -52,6 +61,7 @@ type
   private
     procedure ShowNormalWindow;
     procedure ApplicationException(Sender: TObject; E: Exception);
+    procedure ExpressionPaste(Sender: TObject);
   end;
 
 var
@@ -68,6 +78,19 @@ uses
 const
   HOT_KEY_ID = 1;
 
+procedure TEdit.WMPaste(var Msg: TMessage);
+begin
+  if Assigned(FOnPaste) then
+    begin
+    FOnPaste(Self);
+    Msg.Result := 1;
+    end
+  else
+    begin
+    inherited;
+    end;
+end;
+
 procedure TMainForm.ShowNormalWindow; inline;
 begin
   WindowState := wsNormal;
@@ -77,6 +100,11 @@ end;
 procedure TMainForm.ApplicationException(Sender: TObject; E: Exception);
 begin
   DisplayService.StatusError(ReportError(E));
+end;
+
+procedure TMainForm.ExpressionPaste(Sender: TObject);
+begin
+  MainService.PasteToExpression;
 end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
@@ -95,6 +123,7 @@ begin
 
   VarName.OnChange    := @VarNameChange;
   Expression.OnChange := @ExpressionChange;
+  Expression.OnPaste  := @ExpressionPaste;
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);

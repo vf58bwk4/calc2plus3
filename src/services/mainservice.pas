@@ -36,6 +36,8 @@ procedure ReplaceVarNameFromVarListOnKey;
 procedure DeleteWordLeft;
 procedure ClearVarName;
 
+procedure PasteToExpression;
+
 procedure RemoveVarListItem;
 procedure RemoveHistoryItem;
 
@@ -53,8 +55,8 @@ procedure SaveWindowPos;
 implementation
 
 uses
-  SysUtils, Windows, Controls, StdCtrls, Grids, Types,
-  FormUtils, GridUtils, Storage, AppErrors, Logger,
+  SysUtils, Windows, Controls, StdCtrls, Grids, Types, Clipbrd, LazUTF8,
+  FormUtils, GridUtils, Storage, AppErrors, Logger, ExprLocale,
   ExprService, DisplayService, HistoryService, VariableService, UndoRedoService;
 
 var
@@ -89,10 +91,10 @@ begin
   CursorPos    := _Expression.SelStart;
   OldSelLength := _Expression.SelLength;
 
-  _Expression.Text := Copy(_Expression.Text, 1, CursorPos) + Value + Copy(_Expression.Text, CursorPos + OldSelLength +
-    1, Length(_Expression.Text));
+  _Expression.Text := UTF8Copy(_Expression.Text, 1, CursorPos) + Value + UTF8Copy(_Expression.Text, CursorPos +
+    OldSelLength + 1, UTF8Length(_Expression.Text));
 
-  _Expression.SelStart := CursorPos + Length(Value);
+  _Expression.SelStart := CursorPos + UTF8Length(Value);
 
   _Expression.SetFocus;
 end;
@@ -100,7 +102,7 @@ end;
 procedure ReplaceExpression(const Value: String);
 begin
   _Expression.Text     := Value;
-  _Expression.SelStart := Length(Value);
+  _Expression.SelStart := UTF8Length(Value);
   _Expression.SetFocus;
 end;
 
@@ -161,7 +163,7 @@ begin
 
       Workspace        := Storage.LoadWorkspace;
       _VarName.Text    := Workspace.VarName;
-      _Expression.Text := Workspace.Expression;
+      _Expression.Text := ExprLocale.ToLocal(Workspace.Expression);
       end;
     except
     on E: Exception do
@@ -204,7 +206,7 @@ procedure Finalize;
 begin
     try
       begin
-      Storage.SaveWorkspace(_VarName.Text, _Expression.Text, True);
+      Storage.SaveWorkspace(_VarName.Text, ExprLocale.ToInvariant(_Expression.Text), True);
       end;
     except
     on E: Exception do
@@ -263,7 +265,7 @@ var
   NewExpression, NewResult: String;
 begin
   NewExpression := _Expression.Text;
-  NewResult     := VariableService.FormatNumber(ExprService.Calculate(NewExpression));
+  NewResult     := ExprLocale.FormatNumber(ExprService.Calculate(NewExpression));
 
   _Expression.Text     := NewResult;
   _Expression.SelStart := Length(NewResult);
@@ -333,6 +335,17 @@ begin
   _VarName.Clear;
 end;
 
+procedure PasteToExpression;
+var
+  Text: String;
+begin
+  Text := ExprLocale.NormalizePastedText(Clipboard.AsText);
+  if Text <> '' then
+    begin
+    InsertInExpression(Text);
+    end;
+end;
+
 procedure RemoveVarListItem;
 begin
   if VariableService.RemoveItem then
@@ -361,12 +374,12 @@ end;
 procedure ExpressionChange;
 begin
   UndoRedoService.RecordChange(MakeUndoRedoState(_Expression.Text, _Expression.SelStart));
-  Storage.SaveWorkspace(_VarName.Text, _Expression.Text);
+  Storage.SaveWorkspace(_VarName.Text, ExprLocale.ToInvariant(_Expression.Text));
 end;
 
 procedure VarNameChange;
 begin
-  Storage.SaveWorkspace(_VarName.Text, _Expression.Text);
+  Storage.SaveWorkspace(_VarName.Text, ExprLocale.ToInvariant(_Expression.Text));
 end;
 
 procedure UndoExpression;

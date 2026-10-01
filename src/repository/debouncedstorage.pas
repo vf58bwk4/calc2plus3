@@ -27,8 +27,8 @@ type
     constructor Create(AStorage: IStorage);
     destructor Destroy; override;
 
-    procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
-    procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
+    procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile; const ConvertCell: TCellConverter);
+    procedure LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile; const ConvertCell: TCellConverter);
 
     procedure SaveWorkspace(const VarName, Expression: String; const Force: Boolean = False);
     function LoadWorkspace: TWorkspaceState;
@@ -108,14 +108,14 @@ begin
   inherited Destroy;
 end;
 
-procedure TDebouncedStorage.SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
+procedure TDebouncedStorage.SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile; const ConvertCell: TCellConverter);
 begin
-  FStorage.SaveGridToDataFile(Grid, DataFile);
+  FStorage.SaveGridToDataFile(Grid, DataFile, ConvertCell);
 end;
 
-procedure TDebouncedStorage.LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
+procedure TDebouncedStorage.LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile; const ConvertCell: TCellConverter);
 begin
-  FStorage.LoadGridFromDataFile(Grid, DataFile);
+  FStorage.LoadGridFromDataFile(Grid, DataFile, ConvertCell);
 end;
 
 procedure TDebouncedStorage.SaveWorkspace(const VarName, Expression: String; const Force: Boolean);

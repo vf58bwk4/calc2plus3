@@ -17,7 +17,7 @@ function Grid: TStringGrid;
 implementation
 
 uses
-  Config, Storage, GridUtils;
+  Config, ExprLocale, Storage, GridUtils;
 
 var
   History: TStringGrid;
@@ -28,7 +28,7 @@ begin
   History.AutoFillColumns     := True;
   History.AllowOutboundEvents := False;
 
-  Storage.LoadGridFromDataFile(History, HISTORY_FILE);
+  Storage.LoadGridFromDataFile(History, HISTORY_FILE, @ExprLocale.ToLocal);
 
   History.Row := History.RowCount - 1;
   History.Col := 0;
@@ -63,7 +63,7 @@ begin
       AppendRow;
       end;
     end;
-  Storage.SaveGridToDataFile(History, HISTORY_FILE);
+  Storage.SaveGridToDataFile(History, HISTORY_FILE, @ExprLocale.ToInvariant);
 end;
 
 function RemoveItem: Boolean;
@@ -74,7 +74,7 @@ begin
   if Result then
     begin
     History.DeleteRow(DeleteRowIdx);
-    Storage.SaveGridToDataFile(History, HISTORY_FILE);
+    Storage.SaveGridToDataFile(History, HISTORY_FILE, @ExprLocale.ToInvariant);
     end;
 end;
 
