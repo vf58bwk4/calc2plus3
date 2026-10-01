@@ -48,35 +48,27 @@ const
       end
   = (Left: 0; Top: 1);
 
-procedure TCSVStorage.SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
+  {================ Private routines ================}
+
+function CreateCSV: TCSVDocument;
+begin
+  Result           := TCSVDocument.Create;
+  Result.Delimiter := CSV_DELIMITER;
+end;
+
+{ Writes CSV to a temp file, then replaces the data file with it in one step }
+procedure WriteDataFile(const CSV: TCSVDocument; const DataFile: TDataFile);
 var
   PathFilename: String;
   TmpFilename:  String;
   ErrorCode:    DWORD;
-  CSV:          TCSVDocument;
-  Row, Col:     Integer;
 begin
   PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
   TmpFilename  := PathFilename + '.tmp';
 
-  CSV           := TCSVDocument.Create;
-  CSV.Delimiter := CSV_DELIMITER;
     try
-      try
-        begin
-        for Row := 0 to Grid.RowCount - Grid.FixedRows - 1 do
-          begin
-          for Col := 0 to Grid.ColCount - Grid.FixedCols - 1 do
-            begin
-            CSV.Cells[Col, Row] := Grid.Cells[Grid.FixedCols + Col, Grid.FixedRows + Row];
-            end;
-          end;
-        CSV.SaveToFile(TmpFilename);
-        end;
-      finally
-        begin
-        CSV.Free;
-        end;
+      begin
+      CSV.SaveToFile(TmpFilename);
       end;
     except
     on E: EStreamError do
@@ -93,223 +85,179 @@ begin
     end;
 end;
 
-procedure TCSVStorage.LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
+{ Loads the data file into CSV. Returns False if the file does not exist }
+function ReadDataFile(const DataFile: TDataFile; CSV: TCSVDocument): Boolean;
 var
   PathFilename: String;
-  CSV:          TCSVDocument;
-  Row, Col:     Integer;
 begin
   PathFilename := GetDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
 
   // Clean up any stale temp file left by a previous crashed save
   SysUtils.DeleteFile(PathFilename + '.tmp');
 
-  if FileExists(PathFilename) then
+  Result := SysUtils.FileExists(PathFilename);
+  if Result then
     begin
-    CSV           := TCSVDocument.Create;
-    CSV.Delimiter := CSV_DELIMITER;
       try
-        try
-          begin
-          CSV.LoadFromFile(PathFilename);
-          Grid.RowCount := Grid.FixedRows + CSV.RowCount;
-          for Row := 0 to CSV.RowCount - 1 do
-            begin
-            for Col := 0 to CSV.ColCount[Row] - 1 do
-              begin
-              Grid.Cells[Grid.FixedCols + Col, Grid.FixedRows + Row] := CSV.Cells[Col, Row];
-              end;
-            end;
-          end;
-        finally
-          begin
-          CSV.Free;
-          end;
+        begin
+        CSV.LoadFromFile(PathFilename);
         end;
       except
       on E: EStreamError do
         begin
         raise EStorageError.CreateFmt('Could not load file "%s": %s', [DataFile.Filename, E.Message]);
         end;
+      end;
+    end;
+end;
+
+{================ Interface methods ===============}
+
+procedure TCSVStorage.SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile);
+var
+  CSV:      TCSVDocument;
+  Row, Col: Integer;
+begin
+  CSV := CreateCSV;
+    try
+      begin
+      for Row := 0 to Grid.RowCount - Grid.FixedRows - 1 do
+        begin
+        for Col := 0 to Grid.ColCount - Grid.FixedCols - 1 do
+          begin
+          CSV.Cells[Col, Row] := Grid.Cells[Grid.FixedCols + Col, Grid.FixedRows + Row];
+          end;
+        end;
+      WriteDataFile(CSV, DataFile);
+      end;
+    finally
+      begin
+      CSV.Free;
+      end;
+    end;
+end;
+
+procedure TCSVStorage.LoadGridFromDataFile(Grid: TStringGrid; const DataFile: TDataFile);
+var
+  CSV:      TCSVDocument;
+  Row, Col: Integer;
+begin
+  CSV := CreateCSV;
+    try
+      begin
+      if ReadDataFile(DataFile, CSV) then
+        begin
+        Grid.RowCount := Grid.FixedRows + CSV.RowCount;
+        for Row := 0 to CSV.RowCount - 1 do
+          begin
+          for Col := 0 to CSV.ColCount[Row] - 1 do
+            begin
+            Grid.Cells[Grid.FixedCols + Col, Grid.FixedRows + Row] := CSV.Cells[Col, Row];
+            end;
+          end;
+        end;
+      end;
+    finally
+      begin
+      CSV.Free;
       end;
     end;
 end;
 
 procedure TCSVStorage.SaveWorkspace(const VarName, Expression: String; const Force: Boolean);
 var
-  DataFile:     TDataFile;
-  CSV:          TCSVDocument;
-  PathFilename: String;
-  TmpFilename:  String;
-  ErrorCode:    DWORD;
+  CSV: TCSVDocument;
 begin
-  DataFile     := WORKSPACE_FILE;
-  PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
-  TmpFilename  := PathFilename + '.tmp';
-
-  CSV           := TCSVDocument.Create;
-  CSV.Delimiter := CSV_DELIMITER;
+  CSV := CreateCSV;
     try
-      try
-        begin
-        CSV.Cells[CSV_COLS.Key, WORKSPACE_ROWS.VarName]      := 'varname';
-        CSV.Cells[CSV_COLS.Value, WORKSPACE_ROWS.VarName]    := VarName;
-        CSV.Cells[CSV_COLS.Key, WORKSPACE_ROWS.Expression]   := 'expression';
-        CSV.Cells[CSV_COLS.Value, WORKSPACE_ROWS.Expression] := Expression;
-        CSV.SaveToFile(TmpFilename);
-        end;
-      finally
-        begin
-        CSV.Free;
-        end;
-      end;
-    except
-    on E: EStreamError do
       begin
-      raise EStorageError.CreateFmt('Could not save file "%s": %s', [DataFile.Filename, E.Message]);
+      CSV.Cells[CSV_COLS.Key, WORKSPACE_ROWS.VarName]      := 'varname';
+      CSV.Cells[CSV_COLS.Value, WORKSPACE_ROWS.VarName]    := VarName;
+      CSV.Cells[CSV_COLS.Key, WORKSPACE_ROWS.Expression]   := 'expression';
+      CSV.Cells[CSV_COLS.Value, WORKSPACE_ROWS.Expression] := Expression;
+      WriteDataFile(CSV, WORKSPACE_FILE);
       end;
-    end;
-
-  if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
-    begin
-    ErrorCode := GetLastError;
-    SysUtils.DeleteFile(TmpFilename);
-    raise EStorageError.CreateFmt('Could not save file "%s": %s', [DataFile.Filename, SysErrorMessage(ErrorCode)]);
+    finally
+      begin
+      CSV.Free;
+      end;
     end;
 end;
 
 function TCSVStorage.LoadWorkspace: TWorkspaceState;
 var
-  DataFile:     TDataFile;
-  PathFilename: String;
-  CSV:          TCSVDocument;
+  CSV: TCSVDocument;
 begin
-  DataFile          := WORKSPACE_FILE;
   Result.VarName    := '';
   Result.Expression := '';
 
-  PathFilename := GetDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
-
-  // Clean up any stale temp file from a previous crashed save
-  SysUtils.DeleteFile(PathFilename + '.tmp');
-
-  if SysUtils.FileExists(PathFilename) then
-    begin
-    CSV           := TCSVDocument.Create;
-    CSV.Delimiter := CSV_DELIMITER;
-      try
-        try
-          begin
-          CSV.LoadFromFile(PathFilename);
-          if CSV.RowCount > WORKSPACE_ROWS.VarName then
-            begin
-            Result.VarName := CSV.Cells[CSV_COLS.Value, WORKSPACE_ROWS.VarName];
-            end;
-          if CSV.RowCount > WORKSPACE_ROWS.Expression then
-            begin
-            Result.Expression := CSV.Cells[CSV_COLS.Value, WORKSPACE_ROWS.Expression];
-            end;
-          end;
-        finally
-          begin
-          CSV.Free;
-          end;
-        end;
-      except
-      on E: EStreamError do
+  CSV := CreateCSV;
+    try
+      begin
+      if ReadDataFile(WORKSPACE_FILE, CSV) then
         begin
-        raise EStorageError.CreateFmt('Could not load file "%s": %s', [DataFile.Filename, E.Message]);
+        if CSV.RowCount > WORKSPACE_ROWS.VarName then
+          begin
+          Result.VarName := CSV.Cells[CSV_COLS.Value, WORKSPACE_ROWS.VarName];
+          end;
+        if CSV.RowCount > WORKSPACE_ROWS.Expression then
+          begin
+          Result.Expression := CSV.Cells[CSV_COLS.Value, WORKSPACE_ROWS.Expression];
+          end;
         end;
+      end;
+    finally
+      begin
+      CSV.Free;
       end;
     end;
 end;
 
 procedure TCSVStorage.SaveWindowPos(const Pos: TPoint; const Force: Boolean);
 var
-  DataFile:     TDataFile;
-  CSV:          TCSVDocument;
-  PathFilename: String;
-  TmpFilename:  String;
-  ErrorCode:    DWORD;
+  CSV: TCSVDocument;
 begin
-  DataFile := WINPOS_FILE;
-
-  PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
-  TmpFilename  := PathFilename + '.tmp';
-
-  CSV           := TCSVDocument.Create;
-  CSV.Delimiter := CSV_DELIMITER;
+  CSV := CreateCSV;
     try
-      try
-        begin
-        CSV.Cells[CSV_COLS.Key, WINPOS_ROWS.Left]   := 'left';
-        CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Left] := IntToStr(Pos.X);
-        CSV.Cells[CSV_COLS.Key, WINPOS_ROWS.Top]    := 'top';
-        CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Top]  := IntToStr(Pos.Y);
-        CSV.SaveToFile(TmpFilename);
-        end;
-      finally
-        begin
-        CSV.Free;
-        end;
-      end;
-    except
-    on E: EStreamError do
       begin
-      raise EStorageError.CreateFmt('Could not save file "%s": %s', [DataFile.Filename, E.Message]);
+      CSV.Cells[CSV_COLS.Key, WINPOS_ROWS.Left]   := 'left';
+      CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Left] := IntToStr(Pos.X);
+      CSV.Cells[CSV_COLS.Key, WINPOS_ROWS.Top]    := 'top';
+      CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Top]  := IntToStr(Pos.Y);
+      WriteDataFile(CSV, WINPOS_FILE);
       end;
-    end;
-
-  if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
-    begin
-    ErrorCode := GetLastError;
-    SysUtils.DeleteFile(TmpFilename);
-    raise EStorageError.CreateFmt('Could not save file "%s": %s', [DataFile.Filename, SysErrorMessage(ErrorCode)]);
+    finally
+      begin
+      CSV.Free;
+      end;
     end;
 end;
 
 function TCSVStorage.LoadWindowPos: TPoint;
 var
-  DataFile:     TDataFile;
-  PathFilename: String;
-  CSV:          TCSVDocument;
+  CSV: TCSVDocument;
 begin
-  DataFile := WINPOS_FILE;
   Result.X := 0;
   Result.Y := 0;
 
-  PathFilename := GetDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
-
-  // Clean up any stale temp file from a previous crashed save
-  SysUtils.DeleteFile(PathFilename + '.tmp');
-
-  if SysUtils.FileExists(PathFilename) then
-    begin
-    CSV           := TCSVDocument.Create;
-    CSV.Delimiter := CSV_DELIMITER;
-      try
-        try
-          begin
-          CSV.LoadFromFile(PathFilename);
-          if CSV.RowCount > WINPOS_ROWS.Left then
-            begin
-            Result.X := StrToIntDef(CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Left], 0);
-            end;
-          if CSV.RowCount > WINPOS_ROWS.Top then
-            begin
-            Result.Y := StrToIntDef(CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Top], 0);
-            end;
-          end;
-        finally
-          begin
-          CSV.Free;
-          end;
-        end;
-      except
-      on E: EStreamError do
+  CSV := CreateCSV;
+    try
+      begin
+      if ReadDataFile(WINPOS_FILE, CSV) then
         begin
-        raise EStorageError.CreateFmt('Could not load file "%s": %s', [DataFile.Filename, E.Message]);
+        if CSV.RowCount > WINPOS_ROWS.Left then
+          begin
+          Result.X := StrToIntDef(CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Left], 0);
+          end;
+        if CSV.RowCount > WINPOS_ROWS.Top then
+          begin
+          Result.Y := StrToIntDef(CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Top], 0);
+          end;
         end;
+      end;
+    finally
+      begin
+      CSV.Free;
       end;
     end;
 end;
