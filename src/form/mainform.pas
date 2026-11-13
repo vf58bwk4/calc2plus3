@@ -55,6 +55,7 @@ type
     procedure GridMouseWheelUp(Sender: TObject; Shift: TShiftState; MousePos: TPoint; var Handled: Boolean);
 
     procedure TrayIconMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+    procedure TrayIconMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure MenuItemCloseClick(Sender: TObject);
 
     procedure WMHotKey(var Msg: TMessage); message WM_HOTKEY;
@@ -169,13 +170,21 @@ end;
 
 procedure TMainForm.TrayIconMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
-  if Button = mbRight then
-    begin
-    TrayIconPopupMenu.PopUp;
-    end;
   if Button = mbLeft then
     begin
     ShowMainWindow;
+    end;
+end;
+
+procedure TMainForm.TrayIconMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
+  if Button = mbRight then
+    begin
+    // Windows closes the menu on an outside click only if our thread owns the foreground (KB135788).
+    // Use the tray window: LCL moves focus away from Application.Handle, which closes the menu.
+    Windows.SetForegroundWindow(TrayIcon.Handle);
+    TrayIconPopupMenu.PopUp;
+    Windows.PostMessage(TrayIcon.Handle, WM_NULL, 0, 0);
     end;
 end;
 

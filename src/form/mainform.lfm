@@ -3210,10 +3210,12 @@ object MainForm: TMainForm
     }
     Visible = True
     OnMouseDown = TrayIconMouseDown
+    OnMouseUp = TrayIconMouseUp
     Left = 8
     Top = 600
   end
   object TrayIconPopupMenu: TPopupMenu
+    TrackButton = tbLeftButton
     Left = 48
     Top = 600
     object MenuItemClose: TMenuItem
