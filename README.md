@@ -25,7 +25,7 @@ Requires Free Pascal Compiler (FPC) ≥ 3.2.2 and Lazarus ≥ 4.0.
 The executable is created as `build\calc2plus3.exe`.
 
 ## How to Use the Program
-<img src="./screenshot.png" alt="Screenshot" width="500">
+<img src="./demo.gif" alt="Demo: expressions, variables and History">
 
 The window has four panels: **History**, **Variable Name**, **Expression** and **Variable List**.
 Type an expression and press **Enter**: the result is added to **History**.
