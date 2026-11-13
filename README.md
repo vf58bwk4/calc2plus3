@@ -1,5 +1,8 @@
 # 2 + 3 — A Calculator
 
+[![Total downloads](https://img.shields.io/github/downloads/vf58bwk4/calc2plus3/total)](../../releases)
+[![Latest release downloads](https://img.shields.io/github/downloads/vf58bwk4/calc2plus3/latest/total)](../../releases/latest)
+
 **2 + 3** is a lightweight system-tray calculator for Windows with persistent history and variables,
 always one hotkey (**Alt+K**) away.
 
