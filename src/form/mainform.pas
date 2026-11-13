@@ -132,6 +132,8 @@ begin
   VarName.OnChange    := @VarNameChange;
   Expression.OnChange := @ExpressionChange;
   Expression.OnPaste  := @ExpressionPaste;
+
+  SetEditTokenBreakCallback(Expression);
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
@@ -262,6 +264,10 @@ begin
   if IsKeyCombinationMatch(Key, Shift, [VK_BACK], [ssCtrl]) then
     begin
     MainService.DeleteWordLeft;
+    end;
+  if IsKeyCombinationMatch(Key, Shift, [VK_DELETE], [ssCtrl]) then
+    begin
+    MainService.DeleteWordRight;
     end;
   if IsKeyCombinationMatch(Key, Shift, [VK_RETURN], [ssCtrl]) then
     begin

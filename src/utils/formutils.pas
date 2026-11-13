@@ -19,7 +19,7 @@ function IsForegroundWindow(const Form: TForm): Boolean;
 function IsKeyCombinationMatch(var Key: Word; const Mods: TShiftState; const ExpectedKeys: TVirtualKeySet; const ExpectedMods: TShiftState): Boolean;
 function IsModsStateMatch(const Mods, ExpectedMods: TShiftState): Boolean;
 
-procedure SetEditWordBreakCallback(Edit: TEdit);
+procedure SetEditTokenBreakCallback(Edit: TEdit);
 
 procedure SetEditMargins(Edit: TEdit; const LeftPad, RightPad: Integer);
 procedure SetEditCueBanner(Edit: TEdit; const CueBanner: String);
@@ -29,19 +29,18 @@ function IsAllEditTextSelected(Edit: TEdit): Boolean;
 procedure SelectAllEditText(Edit: TEdit);
 
 procedure DeleteWordLeft(Edit: TEdit);
+procedure DeleteWordRight(Edit: TEdit);
 
 function AdjustWindowPos(const Pos: TPoint; const W, H: Integer): TPoint;
 
 implementation
 
 uses
-  Windows, Messages, SysUtils, Math;
+  Windows, Messages, SysUtils, Math, TokenBreak;
 
 const
   EM_GETSCROLLPOS = $04DD;
   EM_SETCUEBANNER = $1501;
-
-  EXPRESSION_DELIMITERS = [' ', #9, #10, #13, '+', '-', '*', '/', '^', '(', ')', ',', '$', '%', '&'];
 
 function IsForegroundWindow(const Form: TForm): Boolean; inline;
 begin
@@ -67,102 +66,11 @@ begin
   Result          := (ExpectedMods * Mods = ExpectedMods) and (NotExpectedMods * Mods = []);
 end;
 
-
-procedure SkipDelimitersLeft(const Text: PWideChar; const TextLength: Integer; var CurrentPosition: Integer);
+procedure SetEditTokenBreakCallback(Edit: TEdit);
 begin
-  while (0 <= CurrentPosition) and (CurrentPosition < TextLength) and (Text[CurrentPosition] in EXPRESSION_DELIMITERS) do
-    begin
-    Dec(CurrentPosition);
-    end;
-end;
-
-procedure SkipNonDelimitersLeft(const Text: PWideChar; const TextLength: Integer; var CurrentPosition: Integer);
-begin
-  while (0 <= CurrentPosition) and (CurrentPosition < TextLength) and not (Text[CurrentPosition] in EXPRESSION_DELIMITERS) do
-    begin
-    Dec(CurrentPosition);
-    end;
-end;
-
-procedure SkipDelimitersRight(const Text: PWideChar; const TextLength: Integer; var CurrentPosition: Integer);
-begin
-  while (0 <= CurrentPosition) and (CurrentPosition < TextLength) and (Text[CurrentPosition] in EXPRESSION_DELIMITERS) do
-    begin
-    Inc(CurrentPosition);
-    end;
-end;
-
-procedure SkipNonDelimitersRight(const Text: PWideChar; const TextLength: Integer; var CurrentPosition: Integer);
-begin
-  while (0 <= CurrentPosition) and (CurrentPosition < TextLength) and not (Text[CurrentPosition] in EXPRESSION_DELIMITERS) do
-    begin
-    Inc(CurrentPosition);
-    end;
-end;
-
-type
-  TWordBreakState = (wbsClear, wbsSkipRight);
-
-var
-  WordBreakState: TWordBreakState;
-
-function EditWordBreakProc(Text: PWideChar; CurrentPosition: Integer; TextLength: Integer; BreakCode: Integer): Integer; stdcall;
-begin
-  case BreakCode of
-    WB_LEFT:
-      begin
-      Dec(CurrentPosition);
-      if (0 <= CurrentPosition) and (CurrentPosition < TextLength) and (Text[CurrentPosition] in EXPRESSION_DELIMITERS) then
-        begin
-        SkipDelimitersLeft(Text, TextLength, CurrentPosition);
-        end
-      else
-        begin
-        SkipNonDelimitersLeft(Text, TextLength, CurrentPosition);
-        end;
-      Result := CurrentPosition + 1;
-      end;
-    WB_ISDELIMITER:
-      begin
-      WordBreakState := wbsSkipRight;
-      Result         := 1; // 0: LEFT + RIGHT, 1: RIGHT + RIGHT
-      end;
-    WB_RIGHT:
-      begin
-      case WordBreakState of
-        wbsSkipRight:
-          begin
-          WordBreakState := wbsClear;
-          Result         := CurrentPosition;
-          end;
-        else
-          begin
-          Dec(CurrentPosition);
-          if (0 <= CurrentPosition) and (CurrentPosition < TextLength) and (Text[CurrentPosition] in EXPRESSION_DELIMITERS) then
-            begin
-            SkipDelimitersRight(Text, TextLength, CurrentPosition);
-            end
-          else
-            begin
-            SkipNonDelimitersRight(Text, TextLength, CurrentPosition);
-            end;
-          Result := CurrentPosition;
-          end;
-        end;
-      end;
-    else
-      begin
-      Result := CurrentPosition;
-      end;
-    end;
-end;
-
-procedure SetEditWordBreakCallback(Edit: TEdit); inline;
-begin
-  WordBreakState := wbsClear;
   if Edit <> nil then
     begin
-    SendMessage(Edit.Handle, EM_SETWORDBREAKPROC, 0, LPARAM(@EditWordBreakProc));
+    SendMessageW(Edit.Handle, EM_SETWORDBREAKPROC, 0, LPARAM(@EditTokenBreakProc));
     end;
 end;
 
@@ -200,43 +108,56 @@ begin
     end;
 end;
 
+{ Selection in UTF-16 indices, as used by the edit control and TokenBreak }
+procedure GetEditSelection(Edit: TEdit; out SelStart, SelEnd: Integer);
+var
+  S, E: DWORD;
+begin
+  S := 0;
+  E := 0;
+  SendMessageW(Edit.Handle, EM_GETSEL, WPARAM(@S), LPARAM(@E));
+  SelStart := S;
+  SelEnd   := E;
+end;
+
+procedure DeleteEditRange(Edit: TEdit; const FromPos, ToPos: Integer);
+const
+  NO_TEXT: array[0..0] of WideChar = (#0);
+begin
+  if FromPos < ToPos then
+    begin
+    SendMessageW(Edit.Handle, EM_SETSEL, FromPos, ToPos);
+    SendMessageW(Edit.Handle, EM_REPLACESEL, 1, LPARAM(@NO_TEXT[0]));
+    end;
+end;
+
 procedure DeleteWordLeft(Edit: TEdit);
 var
-  Text:             String;
-  InitIdx, CurrIdx: Integer;
+  SelStart, SelEnd: Integer;
 begin
   if Edit <> nil then
     begin
-    if Edit.SelLength > 0 then
+    GetEditSelection(Edit, SelStart, SelEnd);
+    if SelStart = SelEnd then
       begin
-      Edit.SelText := '';
-      end
-    else
-      begin
-      Text    := Edit.Text;
-      InitIdx := Edit.SelStart;
-      CurrIdx := InitIdx;
-      if (CurrIdx > 0) and (Text[CurrIdx] in EXPRESSION_DELIMITERS) then
-        begin
-        while (CurrIdx > 0) and (Text[CurrIdx] in EXPRESSION_DELIMITERS) do
-          begin
-          Dec(CurrIdx);
-          end;
-        end
-      else
-        begin
-        while (CurrIdx > 0) and not (Text[CurrIdx] in EXPRESSION_DELIMITERS) do
-          begin
-          Dec(CurrIdx);
-          end;
-        end;
-      if InitIdx - CurrIdx > 0 then
-        begin
-        Delete(Text, CurrIdx + 1, InitIdx - CurrIdx);
-        Edit.Text     := Text;
-        Edit.SelStart := CurrIdx;
-        end;
+      SelStart := PrevTokenStart(UTF8Decode(Edit.Text), SelEnd);
       end;
+    DeleteEditRange(Edit, SelStart, SelEnd);
+    end;
+end;
+
+procedure DeleteWordRight(Edit: TEdit);
+var
+  SelStart, SelEnd: Integer;
+begin
+  if Edit <> nil then
+    begin
+    GetEditSelection(Edit, SelStart, SelEnd);
+    if SelStart = SelEnd then
+      begin
+      SelEnd := NextTokenStart(UTF8Decode(Edit.Text), SelStart);
+      end;
+    DeleteEditRange(Edit, SelStart, SelEnd);
     end;
 end;
 

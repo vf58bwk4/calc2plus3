@@ -196,6 +196,11 @@
         <IsPartOfProject Value="True" />
         <UnitName Value="ExprLocale" />
       </Unit>
+      <Unit>
+        <Filename Value="utils\tokenbreak.pas" />
+        <IsPartOfProject Value="True" />
+        <UnitName Value="TokenBreak" />
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

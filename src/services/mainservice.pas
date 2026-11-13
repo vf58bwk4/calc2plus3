@@ -34,6 +34,7 @@ procedure ReplaceVarNameFromVarListOnClick;
 procedure ReplaceVarNameFromVarListOnKey;
 
 procedure DeleteWordLeft;
+procedure DeleteWordRight;
 procedure ClearVarName;
 
 procedure PasteToExpression;
@@ -348,6 +349,11 @@ end;
 procedure DeleteWordLeft;
 begin
   FormUtils.DeleteWordLeft(_Expression);
+end;
+
+procedure DeleteWordRight;
+begin
+  FormUtils.DeleteWordRight(_Expression);
 end;
 
 procedure ClearVarName;

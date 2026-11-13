@@ -15,6 +15,9 @@ interface
 function ToInvariant(const Text: String): String;
 function ToLocal(const Text: String): String;
 
+{ Separator between function arguments in local text: ',' or ';' }
+function ArgumentSeparator: Char;
+
 function FormatNumber(const Value: Double): String;
 function ParseNumber(const Text: String): Double;
 function TryParseNumber(const Text: String; out Value: Double): Boolean;
@@ -244,6 +247,11 @@ begin
         Result[I] := LocalArgumentSeparator;
         end;
     end;
+end;
+
+function ArgumentSeparator: Char;
+begin
+  Result := LocalArgumentSeparator;
 end;
 
 function FormatNumber(const Value: Double): String;
