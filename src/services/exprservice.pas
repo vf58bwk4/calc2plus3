@@ -65,8 +65,18 @@ function Calculate(const Expression: String): Double;
 var
   ParserResult: TFPExpressionResult;
 begin
-  Parser.Expression := ExprLocale.ToInvariant(Expression);
-  ParserResult      := Parser.Evaluate;
+    try
+      begin
+      Parser.Expression := ExprLocale.ToInvariant(Expression);
+      end;
+    except
+      begin
+      // FPExprPars keeps the text of a failed parse and would evaluate its partial tree next time
+      Parser.Expression := '';
+      raise;
+      end;
+    end;
+  ParserResult := Parser.Evaluate;
   case ParserResult.ResultType of
     rtInteger:
       begin
