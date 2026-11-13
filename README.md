@@ -4,7 +4,7 @@
 [![Latest release downloads](https://img.shields.io/github/downloads/vf58bwk4/calc2plus3/latest/total)](../../releases/latest)
 
 **2 + 3** is a lightweight system-tray calculator for Windows with persistent history and variables,
-always one hotkey (**Alt+K**) away.
+always one hotkey of your choice (e.g. **Alt+K**) away.
 
 ## Installation
 1. Download `calc2plus3.exe` from the [Releases](../../releases) page.
@@ -26,6 +26,8 @@ Requires Free Pascal Compiler (FPC) ≥ 3.2.2 and Lazarus ≥ 4.0.
      ```
 
 The executable is created as `build\calc2plus3.exe`.
+The Debug build mode (`lazbuild --build-mode=Debug src\calc2plus3.lpi`) creates `build\calc2plus3-dev.exe`,
+which runs side by side with the release build and keeps its data in `%APPDATA%\calc2plus3-dev`.
 
 ## How to Use the Program
 <img src="./demo.gif" alt="Demo: expressions, variables and History">
@@ -54,12 +56,16 @@ Type an expression and press **Enter**: the result is added to **History**.
 | History, Variable List | **Ctrl+Enter** or **Ctrl**+double-click | Replace Expression with the value |
 | History, Variable List | **Ctrl+Alt**+double-click | Delete the entry |
 | Variable List | **Shift+Enter** or **Shift**+double-click on a name | Copy the name into Variable Name |
-| Anywhere in Windows | **Alt+K** | Show or hide the window |
+| Anywhere in Windows | Your hotkey, e.g. **Alt+K** (see [Hotkey](#hotkey)) | Show or hide the window |
 
 Variable operations are not added to History.
 
+## Hotkey
+No hotkey is set by default. Select **Change hotkey…** in the tray icon menu,
+press your preferred key combination and click **OK**. Choose **None** to disable it.
+
 ## Tray, Startup and Autorun
-- Closing the window hides it in the system tray. Left-click the tray icon or press **Alt+K** to show it.
+- Closing the window hides it in the system tray. Left-click the tray icon or press your hotkey to show it.
 - To exit, select **Close** in the tray icon menu.
 - The first start is hidden; later the window starts shown or hidden, as it was last left.
 - While running, the program registers itself to start with Windows
@@ -69,11 +75,17 @@ Variable operations are not added to History.
 ## Data Storage
 All data is kept in `%APPDATA%\calc2plus3`:
 - `history.2p3`, `variables.2p3` — history and variables
-- `workspace.2p3` — contents of Expression and Variable Name
-- `winpos.2p3` — window position and visibility
+- `settings.ini` — the hotkey, window position and visibility, contents of Expression and Variable Name
 - `calc2plus3.log` — error log
 
+`settings.ini` is a readable text file, e.g. `HotKey=Ctrl+Alt+K` in the `[Settings]` section.
+To edit it by hand, exit the program first.
+
 To uninstall, exit the program and delete `calc2plus3.exe` and this folder.
+
+## Upgrading from Earlier Versions
+Earlier versions kept the window state in `winpos.2p3` and `workspace.2p3`. These files are no longer read
+and can be deleted; after the update, choose the hotkey once with **Change hotkey…**.
 
 ## License
 This project is licensed under the [MIT License](./LICENSE).

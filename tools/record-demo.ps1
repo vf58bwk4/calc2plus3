@@ -4,7 +4,7 @@ Plays the README demo scenario in calc2plus3, records it with ffmpeg and convert
 
 .DESCRIPTION
 Exit calc2plus3 from the tray menu first. Do not use the mouse or keyboard while the script runs.
-The script moves %APPDATA%\calc2plus3 aside, records with empty data, then restores the folder.
+The script moves %APPDATA%\calc2plus3 aside, records with empty data and the hotkey Alt+K, then restores the folder.
 Run it in a new process: pwsh -NoProfile -File tools\record-demo.ps1
 #>
 param(
@@ -325,8 +325,11 @@ $isolated = $false
 try {
     if (Test-Path $DataDir) { Move-Item $DataDir $backup }
     $isolated = $true
+    # There is no hotkey by default
+    [void](New-Item -ItemType Directory $DataDir)
+    [IO.File]::WriteAllText((Join-Path $DataDir 'settings.ini'), "[Settings]`r`nHotKey=Alt+K`r`n")
 
-    # With no data the first start is hidden. Alt+K is lost until the app registers it.
+    # With no window state the first start is hidden. Alt+K is lost until the app registers it.
     $app = Start-Process -FilePath $Exe -PassThru
     $hwnd = [IntPtr]::Zero
     for ($try = 0; $try -lt 10 -and $hwnd -eq [IntPtr]::Zero; $try++) {

@@ -1,0 +1,82 @@
+object HotKeyForm: THotKeyForm
+  Left = 400
+  Height = 194
+  Top = 300
+  Width = 392
+  BorderIcons = [biSystemMenu]
+  BorderStyle = bsDialog
+  Caption = 'Change hotkey'
+  ClientHeight = 194
+  ClientWidth = 392
+  DesignTimePPI = 96
+  FormStyle = fsStayOnTop
+  KeyPreview = True
+  OnCreate = FormCreate
+  OnKeyDown = FormKeyDown
+  OnKeyUp = FormKeyUp
+  OnShow = FormShow
+  Position = poScreenCenter
+  LCLVersion = '4.6.0.0'
+  object PromptLabel: TLabel
+    Left = 16
+    Height = 34
+    Top = 10
+    Width = 360
+    AutoSize = False
+    Caption = 'Press the new hotkey. Backspace or Delete: no hotkey.'#13#10'Enter applies it, Esc cancels.'
+    WordWrap = True
+  end
+  object HotKeyLabel: TLabel
+    Left = 16
+    Height = 32
+    Top = 54
+    Width = 360
+    Alignment = taCenter
+    AutoSize = False
+    Font.Height = -21
+    Font.Style = [fsBold]
+    Layout = tlCenter
+    ParentFont = False
+  end
+  object MessageLabel: TLabel
+    Left = 16
+    Height = 36
+    Top = 94
+    Width = 360
+    Alignment = taCenter
+    AutoSize = False
+    Font.Color = clRed
+    ParentFont = False
+    WordWrap = True
+  end
+  object OKButton: TButton
+    Left = 112
+    Height = 30
+    Top = 148
+    Width = 82
+    Caption = 'OK'
+    OnClick = OKButtonClick
+    TabOrder = 0
+    TabStop = False
+  end
+  object NoneButton: TButton
+    Left = 202
+    Height = 30
+    Top = 148
+    Width = 82
+    Caption = 'None'
+    OnClick = NoneButtonClick
+    TabOrder = 1
+    TabStop = False
+  end
+  object CancelButton: TButton
+    Left = 292
+    Height = 30
+    Top = 148
+    Width = 82
+    Caption = 'Cancel'
+    OnClick = CancelButtonClick
+    TabOrder = 2
+    TabStop = False
+  end
+end

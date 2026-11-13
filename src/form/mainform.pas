@@ -32,9 +32,10 @@ type
 
     StatusBar: TStatusBar;
 
-    TrayIcon:          TTrayIcon;
-    TrayIconPopupMenu: TPopupMenu;
-    MenuItemClose:     TMenuItem;
+    TrayIcon:             TTrayIcon;
+    TrayIconPopupMenu:    TPopupMenu;
+    MenuItemChangeHotKey: TMenuItem;
+    MenuItemClose:        TMenuItem;
 
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
@@ -56,14 +57,20 @@ type
 
     procedure TrayIconMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure TrayIconMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+    procedure MenuItemChangeHotKeyClick(Sender: TObject);
     procedure MenuItemCloseClick(Sender: TObject);
 
     procedure WMHotKey(var Msg: TMessage); message WM_HOTKEY;
   private
+    FHotKeyError:    String;
+    FChangingHotKey: Boolean;
+
     procedure ShowMainWindow;
     procedure HideMainWindow;
     procedure ApplicationException(Sender: TObject; E: Exception);
     procedure ExpressionPaste(Sender: TObject);
+    procedure ReportHotKeyError(const Message: String);
+    procedure ReportPendingHotKeyError(Data: PtrInt);
   end;
 
 var
@@ -74,11 +81,8 @@ implementation
 {$R *.lfm}
 
 uses
-  Config, FormUtils, GridUtils, MainService,
+  Config, FormUtils, GridUtils, MainService, HotKeyService, HotKeyForm,
   Storage, DisplayService, Types, Dialogs, AppErrors;
-
-const
-  HOT_KEY_ID = 1;
 
 procedure TEdit.WMPaste(var Msg: TMessage);
 begin
@@ -116,6 +120,24 @@ begin
   MainService.PasteToExpression;
 end;
 
+{ Shown in the status bar and, as the window may be hidden, in a tray balloon; the error is already logged }
+procedure TMainForm.ReportHotKeyError(const Message: String);
+begin
+  DisplayService.AddStatusError(Message);
+
+  TrayIcon.BalloonTitle := Application.Title;
+  TrayIcon.BalloonHint  := Message;
+  TrayIcon.BalloonFlags := bfWarning;
+  TrayIcon.ShowBalloonHint;
+end;
+
+{ Startup errors are reported once the application runs, so that the tray icon is shown }
+procedure TMainForm.ReportPendingHotKeyError(Data: PtrInt);
+begin
+  ReportHotKeyError(FHotKeyError);
+  FHotKeyError := '';
+end;
+
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
   Application.OnException := @ApplicationException;
@@ -123,12 +145,16 @@ begin
 
   Storage.Initialize;
 
-  Windows.RegisterHotKey(Handle, HOT_KEY_ID, HOT_KEY.Modifiers, HOT_KEY.VirtualKey);
-
   Caption       := Application.Title;
   TrayIcon.Hint := Application.Title;
 
   MainService.Initialize(Self);
+
+  FHotKeyError := HotKeyService.Initialize(Handle);
+  if FHotKeyError <> '' then
+    begin
+    Application.QueueAsyncCall(@ReportPendingHotKeyError, 0);
+    end;
 
   VarName.OnChange    := @VarNameChange;
   Expression.OnChange := @ExpressionChange;
@@ -139,7 +165,8 @@ end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
 begin
-  Windows.UnregisterHotKey(Handle, HOT_KEY_ID);
+  Application.RemoveAsyncCalls(Self);
+  HotKeyService.Finalize;
   Application.OnException := nil;
 
     try
@@ -188,6 +215,32 @@ begin
     end;
 end;
 
+procedure TMainForm.MenuItemChangeHotKeyClick(Sender: TObject);
+var
+  ErrorMessage: String;
+begin
+  // the tray menu stays available while the modal dialog is shown
+  if FChangingHotKey then
+    begin
+    Exit;
+    end;
+
+  FChangingHotKey := True;
+    try
+      begin
+      ErrorMessage := HotKeyForm.ChangeHotKey;
+      if ErrorMessage <> '' then
+        begin
+        ReportHotKeyError(ErrorMessage);
+        end;
+      end;
+    finally
+      begin
+      FChangingHotKey := False;
+      end;
+    end;
+end;
+
 procedure TMainForm.MenuItemCloseClick(Sender: TObject);
 begin
   Application.Terminate;
@@ -195,7 +248,7 @@ end;
 
 procedure TMainForm.WMHotKey(var Msg: TMessage);
 begin
-  if Msg.wParam = HOT_KEY_ID then
+  if Msg.wParam = HotKeyService.HOT_KEY_ID then
     begin
     if Visible then
       begin

@@ -32,6 +32,10 @@ type
 
     procedure SaveWindowState(const State: TMainWindowState; const Force: Boolean = False);
     function LoadWindowState: TMainWindowState;
+
+    { The hotkey as text, e.g. 'Ctrl+Alt+K'; empty if none }
+    procedure SaveHotKey(const HotKey: String);
+    function LoadHotKey: String;
   end;
 
 procedure Initialize;
@@ -45,6 +49,9 @@ function LoadWorkspace: TWorkspaceState;
 
 procedure SaveWindowState(const State: TMainWindowState; const Force: Boolean = False);
 function LoadWindowState: TMainWindowState;
+
+procedure SaveHotKey(const HotKey: String);
+function LoadHotKey: String;
 
 implementation
 
@@ -92,6 +99,16 @@ end;
 function LoadWindowState: TMainWindowState;
 begin
   Result := _Storage.LoadWindowState;
+end;
+
+procedure SaveHotKey(const HotKey: String);
+begin
+  _Storage.SaveHotKey(HotKey);
+end;
+
+function LoadHotKey: String;
+begin
+  Result := _Storage.LoadHotKey;
 end;
 
 end.

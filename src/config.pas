@@ -7,30 +7,31 @@ unit Config;
 
 interface
 
-uses
-  Windows;
-
 type
   TDataFile = record
     Dirname, Filename: String;
   end;
 
-  THotKey = record
-    Modifiers, VirtualKey: UINT;
-  end;
-
 const
+  { The Debug build mode defines DEVELOP: it runs side by side with the release build,
+    with its own executable, single-instance lock, data folder and autorun entry }
+  {$IFDEF DEVELOP}
+  APP_NAME  = 'calc2plus3-dev';
+  APP_TITLE = '2 + 3 (dev)';
+
+  APP_WIDE_LOCK_NAME = 'bfcdc1e2-2816-4479-bed9-eb8b3148ea38';
+  {$ELSE}
   APP_NAME  = 'calc2plus3';
   APP_TITLE = '2 + 3';
 
-  DATA_DIR                = APP_NAME;
-  HISTORY_FILE: TDataFile   = (Dirname: DATA_DIR; Filename: 'history.2p3');
-  VARS_FILE: TDataFile      = (Dirname: DATA_DIR; Filename: 'variables.2p3');
-  WORKSPACE_FILE: TDataFile = (Dirname: DATA_DIR; Filename: 'workspace.2p3');
-  WINPOS_FILE: TDataFile    = (Dirname: DATA_DIR; Filename: 'winpos.2p3');
-  LOG_FILE: TDataFile       = (Dirname: DATA_DIR; Filename: 'calc2plus3.log');
+  APP_WIDE_LOCK_NAME = '58f158a7-f385-43e2-b391-58e3136bec19';
+  {$ENDIF}
 
-  HOT_KEY: THotKey = (Modifiers: MOD_ALT; VirtualKey: VK_K);
+  DATA_DIR                = APP_NAME;
+  HISTORY_FILE: TDataFile  = (Dirname: DATA_DIR; Filename: 'history.2p3');
+  VARS_FILE: TDataFile     = (Dirname: DATA_DIR; Filename: 'variables.2p3');
+  SETTINGS_FILE: TDataFile = (Dirname: DATA_DIR; Filename: 'settings.ini');
+  LOG_FILE: TDataFile      = (Dirname: DATA_DIR; Filename: 'calc2plus3.log');
 
 implementation
 

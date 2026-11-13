@@ -35,6 +35,9 @@ type
 
     procedure SaveWindowState(const State: TMainWindowState; const Force: Boolean = False);
     function LoadWindowState: TMainWindowState;
+
+    procedure SaveHotKey(const HotKey: String);
+    function LoadHotKey: String;
   end;
 
 implementation
@@ -176,6 +179,16 @@ begin
 
   FPendingWindowState   := Result;
   FLastSavedWindowState := Result;
+end;
+
+procedure TDebouncedStorage.SaveHotKey(const HotKey: String);
+begin
+  FStorage.SaveHotKey(HotKey);
+end;
+
+function TDebouncedStorage.LoadHotKey: String;
+begin
+  Result := FStorage.LoadHotKey;
 end;
 
 end.

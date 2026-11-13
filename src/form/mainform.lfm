@@ -3218,6 +3218,10 @@ object MainForm: TMainForm
     TrackButton = tbLeftButton
     Left = 48
     Top = 600
+    object MenuItemChangeHotKey: TMenuItem
+      Caption = 'Change hotkey'#226#128#166
+      OnClick = MenuItemChangeHotKeyClick
+    end
     object MenuItemClose: TMenuItem
       Caption = 'Close'
       OnClick = MenuItemCloseClick

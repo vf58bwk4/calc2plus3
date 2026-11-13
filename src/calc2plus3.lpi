@@ -39,7 +39,7 @@
           <Version Value="11" />
           <PathDelim Value="\" />
           <Target>
-            <Filename Value="..\build\calc2plus3" />
+            <Filename Value="..\build\calc2plus3-dev" />
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)" />
@@ -78,6 +78,9 @@
               </Win32>
             </Options>
           </Linking>
+          <Other>
+            <CustomOptions Value="-dDEVELOP" />
+          </Other>
         </CompilerOptions>
       </Item>
     </BuildModes>
@@ -201,6 +204,19 @@
         <Filename Value="utils\tokenbreak.pas" />
         <IsPartOfProject Value="True" />
         <UnitName Value="TokenBreak" />
+      </Unit>
+      <Unit>
+        <Filename Value="services\hotkeyservice.pas" />
+        <IsPartOfProject Value="True" />
+        <UnitName Value="HotKeyService" />
+      </Unit>
+      <Unit>
+        <Filename Value="form\hotkeyform.pas" />
+        <IsPartOfProject Value="True" />
+        <ComponentName Value="HotKeyForm" />
+        <HasResources Value="True" />
+        <ResourceBaseClass Value="Form" />
+        <UnitName Value="HotKeyForm" />
       </Unit>
     </Units>
   </ProjectOptions>

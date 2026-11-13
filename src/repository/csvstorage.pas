@@ -10,6 +10,7 @@ uses
   Grids, Config, Storage;
 
 type
+  { Grids are kept in CSV files; window state, workspace and hotkey in one INI file }
   TCSVStorage = class(TInterfacedObject, IStorage)
   public
     procedure SaveGridToDataFile(const Grid: TStringGrid; const DataFile: TDataFile; const ConvertCell: TCellConverter);
@@ -20,34 +21,41 @@ type
 
     procedure SaveWindowState(const State: TMainWindowState; const Force: Boolean = False);
     function LoadWindowState: TMainWindowState;
+
+    procedure SaveHotKey(const HotKey: String);
+    function LoadHotKey: String;
   end;
 
 implementation
 
 uses
-  SysUtils, Classes, Windows, CsvDocument, DataDir, AppErrors;
+  SysUtils, Classes, Windows, IniFiles, CsvDocument, DataDir, AppErrors;
 
 const
   CSV_DELIMITER = '|';
+  TMP_SUFFIX    = '.tmp';
+  UTF8_BOM      = #$EF#$BB#$BF;
 
-  CSV_COLS: record
-      Key:   Byte;
-      Value: Byte;
+  INI_WINDOW: record
+      Section: String;
+      Left:    String;
+      Top:     String;
+      Visible: String;
       end
-  = (Key: 0; Value: 1);
+  = (Section: 'Window'; Left: 'Left'; Top: 'Top'; Visible: 'Visible');
 
-  WORKSPACE_ROWS: record
-      VarName:    Byte;
-      Expression: Byte;
+  INI_WORKSPACE: record
+      Section:    String;
+      VarName:    String;
+      Expression: String;
       end
-  = (VarName: 0; Expression: 1);
+  = (Section: 'Workspace'; VarName: 'VarName'; Expression: 'Expression');
 
-  WINPOS_ROWS: record
-      Left:    Byte;
-      Top:     Byte;
-      Visible: Byte;
+  INI_SETTINGS: record
+      Section: String;
+      HotKey:  String;
       end
-  = (Left: 0; Top: 1; Visible: 2);
+  = (Section: 'Settings'; HotKey: 'HotKey');
 
   {================ Private routines ================}
 
@@ -57,27 +65,27 @@ begin
   Result.Delimiter := CSV_DELIMITER;
 end;
 
-{ Writes CSV to a temp file, then replaces the data file with it in one step }
-procedure WriteDataFile(const CSV: TCSVDocument; const DataFile: TDataFile);
-var
-  PathFilename: String;
-  TmpFilename:  String;
-  ErrorCode:    DWORD;
+{ With ForceDir the data folder is created if missing }
+function DataFilePath(const DataFile: TDataFile; const ForceDir: Boolean): String;
 begin
-  PathFilename := ForceDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
-  TmpFilename  := PathFilename + '.tmp';
-
-    try
-      begin
-      CSV.SaveToFile(TmpFilename);
-      end;
-    except
-    on E: EStreamError do
-      begin
-      raise EStorageError.CreateFmt('Could not save file "%s": %s', [DataFile.Filename, E.Message]);
-      end;
+  if ForceDir then
+    begin
+    Result := ForceDataDir(DataFile.Dirname);
+    end
+  else
+    begin
+    Result := GetDataDir(DataFile.Dirname);
     end;
+  Result := Result + '\' + DataFile.Filename;
+end;
 
+{ Replaces the data file with its temp copy in one step }
+procedure CommitTempFile(const PathFilename: String; const DataFile: TDataFile);
+var
+  TmpFilename: String;
+  ErrorCode:   DWORD;
+begin
+  TmpFilename := PathFilename + TMP_SUFFIX;
   if not MoveFileEx(PChar(TmpFilename), PChar(PathFilename), MOVEFILE_REPLACE_EXISTING) then
     begin
     ErrorCode := GetLastError;
@@ -86,17 +94,49 @@ begin
     end;
 end;
 
+{ Returns the path of the data file, or '' if it does not exist }
+function FindDataFile(const DataFile: TDataFile): String;
+begin
+  Result := DataFilePath(DataFile, False);
+
+  // Clean up any stale temp file left by a previous crashed save
+  SysUtils.DeleteFile(Result + TMP_SUFFIX);
+
+  if not SysUtils.FileExists(Result) then
+    begin
+    Result := '';
+    end;
+end;
+
+{ Writes CSV to a temp file, then replaces the data file with it in one step }
+procedure WriteDataFile(const CSV: TCSVDocument; const DataFile: TDataFile);
+var
+  PathFilename: String;
+begin
+  PathFilename := DataFilePath(DataFile, True);
+
+    try
+      begin
+      CSV.SaveToFile(PathFilename + TMP_SUFFIX);
+      end;
+    except
+    on E: EStreamError do
+      begin
+      raise EStorageError.CreateFmt('Could not save file "%s": %s', [DataFile.Filename, E.Message]);
+      end;
+    end;
+
+  CommitTempFile(PathFilename, DataFile);
+end;
+
 { Loads the data file into CSV. Returns False if the file does not exist }
 function ReadDataFile(const DataFile: TDataFile; CSV: TCSVDocument): Boolean;
 var
   PathFilename: String;
 begin
-  PathFilename := GetDataDir(DataFile.Dirname) + '\' + DataFile.Filename;
+  PathFilename := FindDataFile(DataFile);
 
-  // Clean up any stale temp file left by a previous crashed save
-  SysUtils.DeleteFile(PathFilename + '.tmp');
-
-  Result := SysUtils.FileExists(PathFilename);
+  Result := PathFilename <> '';
   if Result then
     begin
       try
@@ -110,6 +150,117 @@ begin
         end;
       end;
     end;
+end;
+
+{ Writes Ini to a temp file as is (UTF-8, no BOM), then replaces the data file with it in one step }
+procedure WriteIniFile(const Ini: TMemIniFile; const DataFile: TDataFile);
+var
+  PathFilename: String;
+  Lines:        TStringList;
+  Stream:       TFileStream;
+begin
+  PathFilename := DataFilePath(DataFile, True);
+
+  Lines := TStringList.Create;
+    try
+      begin
+      Ini.GetStrings(Lines);
+        try
+          begin
+          Stream := TFileStream.Create(PathFilename + TMP_SUFFIX, fmCreate);
+            try
+              begin
+              Lines.SaveToStream(Stream, True);
+              end;
+            finally
+              begin
+              Stream.Free;
+              end;
+            end;
+          end;
+        except
+        on E: EStreamError do
+          begin
+          raise EStorageError.CreateFmt('Could not save file "%s": %s', [DataFile.Filename, E.Message]);
+          end;
+        end;
+      end;
+    finally
+      begin
+      Lines.Free;
+      end;
+    end;
+
+  CommitTempFile(PathFilename, DataFile);
+end;
+
+{ An editor may save the file with a BOM; left in place, it hides the first section header }
+procedure RemoveUTF8BOM(Lines: TStringList);
+begin
+  if (Lines.Count > 0) and (Copy(Lines[0], 1, Length(UTF8_BOM)) = UTF8_BOM) then
+    begin
+    Lines[0] := Copy(Lines[0], Length(UTF8_BOM) + 1, MaxInt);
+    end;
+end;
+
+{ Loads the data file (UTF-8, with or without BOM) into a new INI, empty if the file does not exist.
+  The INI has no file name, so it never writes the file by itself.
+  Values are written in quotes where spaces matter: reading trims them, then strips the quotes }
+function ReadIniFile(const DataFile: TDataFile): TMemIniFile;
+var
+  PathFilename: String;
+  Lines:        TStringList;
+  Stream:       TFileStream;
+begin
+  Result := TMemIniFile.Create('', [ifoStripQuotes]);
+    try
+      begin
+      PathFilename := FindDataFile(DataFile);
+      if PathFilename <> '' then
+        begin
+        Lines := TStringList.Create;
+          try
+            begin
+              try
+                begin
+                Stream := TFileStream.Create(PathFilename, fmOpenRead or fmShareDenyWrite);
+                  try
+                    begin
+                    Lines.LoadFromStream(Stream, True);
+                    end;
+                  finally
+                    begin
+                    Stream.Free;
+                    end;
+                  end;
+                end;
+              except
+              on E: EStreamError do
+                begin
+                raise EStorageError.CreateFmt('Could not load file "%s": %s', [DataFile.Filename, E.Message]);
+                end;
+              end;
+            RemoveUTF8BOM(Lines);
+            Result.SetStrings(Lines);
+            end;
+          finally
+            begin
+            Lines.Free;
+            end;
+          end;
+        end;
+      end;
+    except
+      begin
+      Result.Free;
+      raise;
+      end;
+    end;
+end;
+
+function Quoted(const Value: String): String; inline;
+begin
+  Result := '"' + Value + '"';
 end;
 
 {================ Interface methods ===============}
@@ -167,71 +318,54 @@ end;
 
 procedure TCSVStorage.SaveWorkspace(const VarName, Expression: String; const Force: Boolean);
 var
-  CSV: TCSVDocument;
+  Ini: TMemIniFile;
 begin
-  CSV := CreateCSV;
+  Ini := ReadIniFile(SETTINGS_FILE);
     try
       begin
-      CSV.Cells[CSV_COLS.Key, WORKSPACE_ROWS.VarName]      := 'varname';
-      CSV.Cells[CSV_COLS.Value, WORKSPACE_ROWS.VarName]    := VarName;
-      CSV.Cells[CSV_COLS.Key, WORKSPACE_ROWS.Expression]   := 'expression';
-      CSV.Cells[CSV_COLS.Value, WORKSPACE_ROWS.Expression] := Expression;
-      WriteDataFile(CSV, WORKSPACE_FILE);
+      Ini.WriteString(INI_WORKSPACE.Section, INI_WORKSPACE.VarName, Quoted(VarName));
+      Ini.WriteString(INI_WORKSPACE.Section, INI_WORKSPACE.Expression, Quoted(Expression));
+      WriteIniFile(Ini, SETTINGS_FILE);
       end;
     finally
       begin
-      CSV.Free;
+      Ini.Free;
       end;
     end;
 end;
 
 function TCSVStorage.LoadWorkspace: TWorkspaceState;
 var
-  CSV: TCSVDocument;
+  Ini: TMemIniFile;
 begin
-  Result.VarName    := '';
-  Result.Expression := '';
-
-  CSV := CreateCSV;
+  Ini := ReadIniFile(SETTINGS_FILE);
     try
       begin
-      if ReadDataFile(WORKSPACE_FILE, CSV) then
-        begin
-        if CSV.RowCount > WORKSPACE_ROWS.VarName then
-          begin
-          Result.VarName := CSV.Cells[CSV_COLS.Value, WORKSPACE_ROWS.VarName];
-          end;
-        if CSV.RowCount > WORKSPACE_ROWS.Expression then
-          begin
-          Result.Expression := CSV.Cells[CSV_COLS.Value, WORKSPACE_ROWS.Expression];
-          end;
-        end;
+      Result.VarName    := Ini.ReadString(INI_WORKSPACE.Section, INI_WORKSPACE.VarName, '');
+      Result.Expression := Ini.ReadString(INI_WORKSPACE.Section, INI_WORKSPACE.Expression, '');
       end;
     finally
       begin
-      CSV.Free;
+      Ini.Free;
       end;
     end;
 end;
 
 procedure TCSVStorage.SaveWindowState(const State: TMainWindowState; const Force: Boolean);
 var
-  CSV: TCSVDocument;
+  Ini: TMemIniFile;
 begin
-  CSV := CreateCSV;
+  Ini := ReadIniFile(SETTINGS_FILE);
     try
       begin
-      CSV.Cells[CSV_COLS.Key, WINPOS_ROWS.Left]      := 'left';
-      CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Left]    := IntToStr(State.Left);
-      CSV.Cells[CSV_COLS.Key, WINPOS_ROWS.Top]       := 'top';
-      CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Top]     := IntToStr(State.Top);
-      CSV.Cells[CSV_COLS.Key, WINPOS_ROWS.Visible]   := 'visible';
-      CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Visible] := BoolToStr(State.Visible, '1', '0');
-      WriteDataFile(CSV, WINPOS_FILE);
+      Ini.WriteInteger(INI_WINDOW.Section, INI_WINDOW.Left, State.Left);
+      Ini.WriteInteger(INI_WINDOW.Section, INI_WINDOW.Top, State.Top);
+      Ini.WriteBool(INI_WINDOW.Section, INI_WINDOW.Visible, State.Visible);
+      WriteIniFile(Ini, SETTINGS_FILE);
       end;
     finally
       begin
-      CSV.Free;
+      Ini.Free;
       end;
     end;
 end;
@@ -239,34 +373,51 @@ end;
 { Without a stored state (first start) the window starts hidden }
 function TCSVStorage.LoadWindowState: TMainWindowState;
 var
-  CSV: TCSVDocument;
+  Ini: TMemIniFile;
 begin
-  Result.Left    := 0;
-  Result.Top     := 0;
-  Result.Visible := False;
-
-  CSV := CreateCSV;
+  Ini := ReadIniFile(SETTINGS_FILE);
     try
       begin
-      if ReadDataFile(WINPOS_FILE, CSV) then
-        begin
-        if CSV.RowCount > WINPOS_ROWS.Left then
-          begin
-          Result.Left := StrToIntDef(CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Left], 0);
-          end;
-        if CSV.RowCount > WINPOS_ROWS.Top then
-          begin
-          Result.Top := StrToIntDef(CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Top], 0);
-          end;
-        if CSV.RowCount > WINPOS_ROWS.Visible then
-          begin
-          Result.Visible := CSV.Cells[CSV_COLS.Value, WINPOS_ROWS.Visible] = '1';
-          end;
-        end;
+      Result.Left    := Ini.ReadInteger(INI_WINDOW.Section, INI_WINDOW.Left, 0);
+      Result.Top     := Ini.ReadInteger(INI_WINDOW.Section, INI_WINDOW.Top, 0);
+      Result.Visible := Ini.ReadBool(INI_WINDOW.Section, INI_WINDOW.Visible, False);
       end;
     finally
       begin
-      CSV.Free;
+      Ini.Free;
+      end;
+    end;
+end;
+
+procedure TCSVStorage.SaveHotKey(const HotKey: String);
+var
+  Ini: TMemIniFile;
+begin
+  Ini := ReadIniFile(SETTINGS_FILE);
+    try
+      begin
+      Ini.WriteString(INI_SETTINGS.Section, INI_SETTINGS.HotKey, HotKey);
+      WriteIniFile(Ini, SETTINGS_FILE);
+      end;
+    finally
+      begin
+      Ini.Free;
+      end;
+    end;
+end;
+
+function TCSVStorage.LoadHotKey: String;
+var
+  Ini: TMemIniFile;
+begin
+  Ini := ReadIniFile(SETTINGS_FILE);
+    try
+      begin
+      Result := Ini.ReadString(INI_SETTINGS.Section, INI_SETTINGS.HotKey, '');
+      end;
+    finally
+      begin
+      Ini.Free;
       end;
     end;
 end;

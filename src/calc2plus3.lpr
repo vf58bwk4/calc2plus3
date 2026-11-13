@@ -15,9 +15,6 @@ uses
 
   {$R *.res}
 
-const
-  APP_WIDE_LOCK_NAME = '58f158a7-f385-43e2-b391-58e3136bec19';
-
 begin
   if AppWideLock.CreateLock(APP_WIDE_LOCK_NAME) then
     begin
